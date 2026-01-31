@@ -1,4 +1,4 @@
-name: calendar_app
+name: calendar
 description: "A modern Flutter calendar application with beautiful UI."
 publish_to: 'none'
 version: 1.0.0+1
