@@ -105,7 +105,7 @@ class MonthCalendar extends StatelessWidget {
     // 計算動態高度
     // 基準：5週的高度約為 420 (84 * 5)
     // 84 = 30 (Date) + 54 (3 rows * 18)
-    const targetTotalHeight = 450.0;
+    const targetTotalHeight = 460.0;
     final cellHeight = targetTotalHeight / visibleWeeks.length;
 
     // 計算動態最大事件行數

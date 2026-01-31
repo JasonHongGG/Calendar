@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
 import '../theme/app_colors.dart';
-import '../utils/date_utils.dart';
+
 import '../widgets/gradient_header.dart';
 import '../widgets/month_calendar.dart';
 
@@ -28,14 +28,17 @@ class MonthViewPage extends StatelessWidget {
             // 漸層標題
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GradientHeader(
-                title: CalendarDateUtils.formatYearMonth(currentMonth),
+              child: CalendarHeader(
+                title:
+                    '${currentMonth.year}/${currentMonth.month.toString().padLeft(2, '0')}',
                 onPrevious: () => provider.previousMonth(),
                 onNext: () => provider.nextMonth(),
-                onToday: () => provider.goToToday(),
+                onSettings: () {
+                  // TODO: Navigate to settings page
+                },
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 0),
             // 月曆
             Expanded(
               child: SingleChildScrollView(
