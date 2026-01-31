@@ -5,7 +5,7 @@ import '../theme/app_colors.dart';
 import '../utils/date_utils.dart';
 import '../widgets/gradient_header.dart';
 import '../widgets/month_calendar.dart';
-import '../widgets/today_events_preview.dart';
+
 import '../widgets/add_event_sheet.dart';
 
 /// 月視圖頁面
@@ -56,14 +56,7 @@ class MonthViewPage extends StatelessWidget {
                       },
                     ),
                     const SizedBox(height: 20),
-                    // 今日事件預覽
-                    TodayEventsPreview(
-                      events: todayEvents,
-                      onViewAll: () {
-                        // 切換到日程頁面
-                        // 這會由父層 HomePage 處理
-                      },
-                    ),
+
                     const SizedBox(height: 100), // 給 FAB 留空間
                   ],
                 ),

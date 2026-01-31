@@ -7,6 +7,7 @@ import '../providers/event_provider.dart';
 import '../theme/app_colors.dart';
 import '../utils/date_utils.dart';
 import 'date_range_picker.dart';
+import 'delete_confirmation_dialog.dart';
 
 /// 新增事件底部彈出表單
 class AddEventSheet extends StatefulWidget {
@@ -123,6 +124,21 @@ class _AddEventSheetState extends State<AddEventSheet> {
                             letterSpacing: -0.5,
                           ),
                         ),
+                        if (_isEditing)
+                          IconButton(
+                            onPressed: _deleteEvent,
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: Colors.red,
+                              size: 28,
+                            ),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.red.withValues(
+                                alpha: 0.1,
+                              ),
+                              padding: const EdgeInsets.all(8),
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -633,6 +649,160 @@ class _AddEventSheetState extends State<AddEventSheet> {
     }
 
     Navigator.pop(context);
+  }
+
+  void _deleteEvent() async {
+    final confirm = await showGeneralDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return const SizedBox(); // 略過因為我們在 transitionBuilder 構建
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        // 彈跳動畫曲線
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+        );
+
+        return Transform.scale(
+          scale: curvedAnimation.value,
+          child: Opacity(
+            opacity: animation.value,
+            child: _buildDeleteDialog(context),
+          ),
+        );
+      },
+    );
+
+    if (confirm == true) {
+      if (!mounted) return;
+      final provider = Provider.of<EventProvider>(context, listen: false);
+      provider.deleteEvent(widget.editEvent!.id);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  Widget _buildDeleteDialog(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: Colors.white,
+      elevation: 16,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 危險圖示
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2), // 紅色背景
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_rounded,
+                color: Color(0xFFEF4444), // 紅色圖示
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 標題
+            const Text(
+              '刪除事件',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // 內容說明
+            Text(
+              '確定要刪除「${widget.editEvent!.title}」嗎？\n此動作無法復原。',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 按鈕排
+            Row(
+              children: [
+                // 取消按鈕
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      '取消',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // 刪除按鈕 (漸層背景)
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => Navigator.pop(context, true),
+                        borderRadius: BorderRadius.circular(12),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: Text(
+                              '確認刪除',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

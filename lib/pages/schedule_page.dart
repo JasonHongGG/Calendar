@@ -8,6 +8,7 @@ import '../utils/date_utils.dart';
 import '../widgets/mini_calendar.dart';
 import '../widgets/event_card.dart';
 import '../widgets/add_event_sheet.dart';
+import '../widgets/delete_confirmation_dialog.dart';
 
 /// 日程視圖頁面
 class SchedulePage extends StatefulWidget {
@@ -379,28 +380,12 @@ class _SchedulePageState extends State<SchedulePage> {
     );
   }
 
-  void _confirmDelete(Event event) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('刪除事件'),
-        content: Text('確定要刪除「${event.title}」嗎？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<EventProvider>().deleteEvent(event.id);
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('刪除'),
-          ),
-        ],
-      ),
-    );
+  void _confirmDelete(Event event) async {
+    final confirm = await showDeleteConfirmationDialog(context, event.title);
+
+    if (confirm == true) {
+      if (!mounted) return;
+      context.read<EventProvider>().deleteEvent(event.id);
+    }
   }
 }
