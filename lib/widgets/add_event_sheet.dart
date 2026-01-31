@@ -7,7 +7,6 @@ import '../providers/event_provider.dart';
 import '../theme/app_colors.dart';
 import '../utils/date_utils.dart';
 import 'date_range_picker.dart';
-import 'delete_confirmation_dialog.dart';
 
 /// 新增事件底部彈出表單
 class AddEventSheet extends StatefulWidget {
@@ -30,6 +29,8 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
   // -1 代表隨機顏色，0~N 代表 AppColors.eventColors 的索引
   int _selectedColorIndex = -1;
+
+  bool _isColorPickerExpanded = false;
 
   bool get _isEditing => widget.editEvent != null;
 
@@ -143,31 +144,20 @@ class _AddEventSheetState extends State<AddEventSheet> {
                     ),
                     const SizedBox(height: 20),
 
-                    // 事件名稱
-                    _buildStyledTextField(
-                      controller: _titleController,
-                      label: '事件名稱',
-                      placeholder: '輸入標題...',
-                      icon: Icons.edit_rounded,
-                      validator: (value) =>
-                          (value == null || value.trim().isEmpty)
-                          ? '請輸入事件名稱'
-                          : null,
-                    ),
+                    // 事件名稱 與 顏色選擇器整合
+                    _buildTitleWithColorPicker(),
                     const SizedBox(height: 16),
 
                     // 日期區域
                     _buildDateSection(),
                     const SizedBox(height: 16),
 
-                    // 顏色區域
-                    _buildColorSection(),
-                    const SizedBox(height: 16),
+                    // 已移除獨立的 _buildColorSection()
+                    // const SizedBox(height: 16),
 
                     // 備註區域 (高度縮減)
                     _buildStyledTextField(
                       controller: _descriptionController,
-                      label: '備註',
                       placeholder: '添加備註...',
                       icon: Icons.notes_rounded,
                       maxLines: 1, // 減少行數至 1 行
@@ -187,9 +177,142 @@ class _AddEventSheetState extends State<AddEventSheet> {
     );
   }
 
+  Widget _buildTitleWithColorPicker() {
+    // 獲取當前顏色
+    Color currentColor;
+    if (_selectedColorIndex == -1) {
+      currentColor = Colors.transparent; // 隨機顏色使用特殊顯示
+    } else {
+      currentColor = AppColors.eventColors[_selectedColorIndex];
+    }
+
+    const rainbowGradient = SweepGradient(
+      colors: [
+        Colors.red,
+        Colors.orange,
+        Colors.yellow,
+        Colors.green,
+        Colors.blue,
+        Colors.purple,
+        Colors.red,
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 移除外層裝飾容器
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+          child: Row(
+            children: [
+              // 顏色選擇切換按鈕
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isColorPickerExpanded = !_isColorPickerExpanded;
+                  });
+                },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _selectedColorIndex == -1 ? null : currentColor,
+                    gradient: _selectedColorIndex == -1
+                        ? rainbowGradient
+                        : null,
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                            (_selectedColorIndex == -1
+                                    ? AppColors.gradientStart
+                                    : currentColor)
+                                .withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: _selectedColorIndex == -1
+                      ? const Icon(
+                          Icons.shuffle_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        )
+                      : (_isColorPickerExpanded
+                            ? const Icon(
+                                Icons.keyboard_arrow_up_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              )
+                            : const Icon(
+                                Icons.edit_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              )),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // 分隔線
+              Container(width: 1, height: 24, color: AppColors.divider),
+
+              const SizedBox(width: 4),
+
+              // 標題輸入框
+              Expanded(
+                child: TextFormField(
+                  controller: _titleController,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: '輸入標題...',
+                    hintStyle: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.normal,
+                      fontSize: 15,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    isDense: true,
+                  ),
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? '請輸入事件名稱'
+                      : null,
+                  textInputAction: TextInputAction.done,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // 可展開的顏色選擇列
+        AnimatedCrossFade(
+          firstChild: const SizedBox(height: 0),
+          secondChild: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: _buildColorSelectionRow(),
+          ),
+          crossFadeState: _isColorPickerExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 300),
+          sizeCurve: Curves.easeOutBack,
+        ),
+      ],
+    );
+  }
+
   Widget _buildStyledTextField({
     required TextEditingController controller,
-    required String label,
     required String placeholder,
     required IconData icon,
     int maxLines = 1,
@@ -199,17 +322,6 @@ class _AddEventSheetState extends State<AddEventSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 6),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
         Container(
           decoration: BoxDecoration(
             color: AppColors.background.withValues(alpha: 0.6),
@@ -255,17 +367,6 @@ class _AddEventSheetState extends State<AddEventSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 6),
-          child: Text(
-            '時間',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
         GestureDetector(
           onTap: _showDateRangePicker,
           child: Container(
@@ -399,52 +500,31 @@ class _AddEventSheetState extends State<AddEventSheet> {
     );
   }
 
-  Widget _buildColorSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            '標籤顏色',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 68, // 再次增加高度以容納更大的發光效果
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 4,
-              vertical: 8,
-            ), // 增加垂直 padding 讓陰影顯示
-            scrollDirection: Axis.horizontal,
-            // +1 因為第一個是隨機按鈕
-            itemCount: AppColors.eventColors.length + 1,
-            separatorBuilder: (context, index) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                // 隨機按鈕
-                return _buildColorItem(
-                  index: -1,
-                  color: Colors.transparent, // 隨機按鈕用漸層處理
-                  isRandom: true,
-                );
-              }
-              // 實際顏色列表 (index - 1 對應到 List)
-              final colorIndex = index - 1;
-              return _buildColorItem(
-                index: colorIndex,
-                color: AppColors.eventColors[colorIndex],
-                isRandom: false,
-              );
-            },
-          ),
-        ),
-      ],
+  // 僅保留橫向顏色選擇列表的邏輯
+  Widget _buildColorSelectionRow() {
+    return SizedBox(
+      height: 80,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        scrollDirection: Axis.horizontal,
+        itemCount: AppColors.eventColors.length + 1,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return _buildColorItem(
+              index: -1,
+              color: Colors.transparent,
+              isRandom: true,
+            );
+          }
+          final colorIndex = index - 1;
+          return _buildColorItem(
+            index: colorIndex,
+            color: AppColors.eventColors[colorIndex],
+            isRandom: false,
+          );
+        },
+      ),
     );
   }
 
@@ -477,8 +557,8 @@ class _AddEventSheetState extends State<AddEventSheet> {
         children: [
           // 彩虹陰影 (僅在選中且為隨機按鈕時顯示)
           if (isRandom && isSelected)
-            Positioned(
-              top: 4, // 向下偏移
+            Transform.translate(
+              offset: const Offset(0, 4), // 向下偏移
               child: ImageFiltered(
                 imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                 child: Container(
