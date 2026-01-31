@@ -62,7 +62,10 @@ class DayCell extends StatelessWidget {
                               alpha: 0.8,
                             ) // 選中：深色背景
                           : null),
-                shape: BoxShape.circle,
+                shape: BoxShape.rectangle,
+                borderRadius: BorderRadius.circular(
+                  (isCompact ? 22.0 : 26.0) * 0.4,
+                ), // 圓角約為寬度的 40%
                 boxShadow: (isToday || isSelected)
                     ? [
                         BoxShadow(

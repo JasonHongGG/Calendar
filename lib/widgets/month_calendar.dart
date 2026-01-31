@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+
 import 'package:provider/provider.dart';
 import '../models/event.dart';
 import '../providers/event_provider.dart';
@@ -90,17 +90,44 @@ class MonthCalendar extends StatelessWidget {
     List<Event> events,
     EventProvider provider,
   ) {
-    // 將日期分成 6 週
-    final weeks = <List<DateTime>>[];
+    // 將日期分成 6 週，但過濾掉完全不屬於當前月份的週
+    final allWeeks = <List<DateTime>>[];
     for (var i = 0; i < days.length; i += 7) {
-      weeks.add(days.sublist(i, i + 7));
+      allWeeks.add(days.sublist(i, i + 7));
     }
+
+    final visibleWeeks = allWeeks.where((week) {
+      return week.any(
+        (date) => CalendarDateUtils.isInMonth(date, currentMonth),
+      );
+    }).toList();
+
+    // 計算動態高度
+    // 基準：5週的高度約為 420 (84 * 5)
+    // 84 = 30 (Date) + 54 (3 rows * 18)
+    const targetTotalHeight = 450.0;
+    final cellHeight = targetTotalHeight / visibleWeeks.length;
+
+    // 計算動態最大事件行數
+    // cellHeight = 30 (base) + events
+    // events space = cellHeight - 30
+    // row height = 20 (18 bar + 2 spacing)
+    final availableEventSpace = cellHeight - 30.0;
+    final maxEventRows = (availableEventSpace / 20.0).floor();
 
     // 構建帶有分隔線的週列表
     final children = <Widget>[];
-    for (var i = 0; i < weeks.length; i++) {
-      children.add(_buildWeekRow(weeks[i], events, provider));
-      if (i < weeks.length - 1) {
+    for (var i = 0; i < visibleWeeks.length; i++) {
+      children.add(
+        _buildWeekRow(
+          visibleWeeks[i],
+          events,
+          provider,
+          cellHeight,
+          maxEventRows,
+        ),
+      );
+      if (i < visibleWeeks.length - 1) {
         children.add(
           Divider(
             height: 1,
@@ -118,29 +145,15 @@ class MonthCalendar extends StatelessWidget {
     List<DateTime> week,
     List<Event> allEvents,
     EventProvider provider,
+    double cellHeight,
+    int maxRows,
   ) {
     // 計算並佈局這一週的事件
     final layoutEvents = _layoutEventsForWeek(week, allEvents);
 
-    // 計算每個日期格子需要的高度
-    const baseCellHeight = 32.0; // 日期數字區域高度 (從 36 縮減)
-    const eventRowHeight = 18.0; // 每個事件條高度
+    const baseCellHeight = 30.0;
+    const eventRowHeight = 18.0;
     const eventSpacing = 2.0;
-
-    // 最多顯示幾行事件
-    final maxLane = layoutEvents.isEmpty
-        ? 0
-        : layoutEvents.map((e) => e.lane).reduce((a, b) => a > b ? a : b);
-
-    // 限制最多顯示 3 行 (根據用戶需求)
-    const maxRows = 3;
-    final visibleLanes = min(maxLane + 1, maxRows);
-    final totalEventHeight = visibleLanes * (eventRowHeight + eventSpacing);
-
-    // 總高度: 基礎高度 + 事件總高度 + 底部緩衝
-    final totalHeight = baseCellHeight + totalEventHeight + 4.0;
-    // 設定一個最小高度，避免太擠
-    final cellHeight = totalHeight < 80.0 ? 80.0 : totalHeight;
 
     return SizedBox(
       height: cellHeight,
@@ -180,6 +193,7 @@ class MonthCalendar extends StatelessWidget {
                     eventRowHeight,
                     eventSpacing,
                     cellWidth,
+                    maxRows,
                   ),
                 );
               },
@@ -285,9 +299,10 @@ class MonthCalendar extends StatelessWidget {
     double rowHeight,
     double spacing,
     double cellWidth,
+    int maxRows,
   ) {
     final List<Widget> bars = [];
-    const maxRows = 3;
+    // maxRows passed from arguments
 
     // 1. 計算每天的事件總數
     final eventCounts = List.filled(7, 0);
@@ -350,12 +365,16 @@ class MonthCalendar extends StatelessWidget {
     }
 
     // 3. 遍歷事件並生成 Widget
-    for (final item in layouts) {
-      // 超過第3行(index 2)的事件，除了在第3行本身可能顯示的部分，完全忽略
-      if (item.lane > 2) continue;
+    // 第 maxRows-1 行是 "溢出顯示行" (0-indexed)
+    // 例如 maxRows=3, overflowLane=2 (第3行)
+    final overflowLane = maxRows - 1;
 
-      // 如果是在前兩行 (0, 1)，直接顯示
-      if (item.lane < 2) {
+    for (final item in layouts) {
+      // 超過 overflowLane 的事件，除了在該行本身可能顯示的部分，完全忽略
+      if (item.lane > overflowLane) continue;
+
+      // 如果是在溢出顯示行之前，直接顯示
+      if (item.lane < overflowLane) {
         final barWidth = (cellWidth * item.data.span) - 4;
         final leftOffset = (cellWidth * item.data.startOffset) + 2;
         final topPos = topOffset + (item.lane * (rowHeight + spacing));
@@ -369,10 +388,10 @@ class MonthCalendar extends StatelessWidget {
             child: createEventBar(item.data, barWidth, false, false),
           ),
         );
-      } else if (item.lane == 2) {
-        // 如果是在第 3 行，需要檢查每一天是否 "溢出"
-        // 只有在當天總事件數 <= 3 時，才顯示該事件的該天部分
-        // 若 > 3，該位置留給 +N
+      } else if (item.lane == overflowLane) {
+        // 如果是在最後一行 (overflowLane)，需要檢查每一天是否 "溢出"
+        // 只有在當天總事件數 <= maxRows 時，才顯示該事件的該天部分
+        // 若 > maxRows，該位置留給 +N
         int currentStart = -1;
         int currentLength = 0;
 
@@ -438,11 +457,10 @@ class MonthCalendar extends StatelessWidget {
     }
 
     // 4. 生成 +N 指示器
-    // 在第 3 行 (index 2) 的位置
-    final overflowLane = 2;
     for (var i = 0; i < 7; i++) {
       if (eventCounts[i] > maxRows) {
-        final count = eventCounts[i] - 2; // 前兩行顯示了 2 個，剩下都縮在第 3 行
+        // 前 (maxRows-1) 行顯示了事件，剩下都縮在第 maxRows 行
+        final count = eventCounts[i] - (maxRows - 1);
         final leftOffset = (cellWidth * i) + 2;
         final topPos = topOffset + (overflowLane * (rowHeight + spacing));
         final width = cellWidth - 4;
