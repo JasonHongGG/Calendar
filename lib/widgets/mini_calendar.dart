@@ -5,8 +5,10 @@ import '../theme/app_colors.dart';
 import '../utils/date_utils.dart';
 import 'day_cell.dart';
 
-/// 迷你月曆組件（用於日程視圖）
-class MiniCalendar extends StatelessWidget {
+import 'gradient_header.dart'; // Import CalendarHeader
+
+/// 迷你月曆組件（用於日程視圖，支持左右滑動）
+class MiniCalendar extends StatefulWidget {
   final DateTime currentMonth;
   final DateTime selectedDate;
   final Function(DateTime)? onDateSelected;
@@ -21,14 +23,51 @@ class MiniCalendar extends StatelessWidget {
   });
 
   @override
+  State<MiniCalendar> createState() => _MiniCalendarState();
+}
+
+class _MiniCalendarState extends State<MiniCalendar> {
+  late PageController _pageController;
+  static const int _startYear = 2020;
+  static const int _startMonth = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialIndex = _calculateIndex(widget.currentMonth);
+    _pageController = PageController(initialPage: initialIndex);
+  }
+
+  @override
+  void didUpdateWidget(MiniCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync controller if currentMonth changes externally
+    if (widget.currentMonth.year != oldWidget.currentMonth.year ||
+        widget.currentMonth.month != oldWidget.currentMonth.month) {
+      final targetIndex = _calculateIndex(widget.currentMonth);
+      if (_pageController.hasClients &&
+          _pageController.page?.round() != targetIndex) {
+        _pageController.jumpToPage(targetIndex);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  int _calculateIndex(DateTime date) {
+    return (date.year - _startYear) * 12 + (date.month - _startMonth);
+  }
+
+  DateTime _calculateDateFromIndex(int index) {
+    return DateTime(_startYear, _startMonth + index);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final days = CalendarDateUtils.getCalendarDays(currentMonth);
-    final provider = context.watch<EventProvider>();
-
-    // 計算實際需要顯示的週數
-    final weeksNeeded = _calculateWeeksNeeded(days);
-    final displayDays = days.take(weeksNeeded * 7).toList();
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -44,96 +83,62 @@ class MiniCalendar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 月份標題
-          _buildMonthHeader(),
+          // 月份標題 (使用新的 CalendarHeader)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: CalendarHeader(
+              title:
+                  '${widget.currentMonth.year}/${widget.currentMonth.month.toString().padLeft(2, '0')}',
+              onPrevious: () {
+                _pageController.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              onNext: () {
+                _pageController.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              // Mini calendar may not need settings button
+              onSettings: null,
+            ),
+          ),
           const SizedBox(height: 8),
           // 星期標題
           _buildWeekdayHeader(),
           const SizedBox(height: 4),
-          // 日曆網格
-          _buildCalendarGrid(displayDays, provider),
+          // 可滑動的日曆網格
+          SizedBox(
+            height: 250, // Fixed height for 6 rows (40*6 + margin)
+            child: PageView.builder(
+              controller: _pageController,
+              allowImplicitScrolling: true,
+              onPageChanged: (index) {
+                final newMonth = _calculateDateFromIndex(index);
+                widget.onMonthChanged?.call(newMonth);
+              },
+              itemBuilder: (context, index) {
+                final monthDate = _calculateDateFromIndex(index);
+                return _buildCalendarContent(monthDate);
+              },
+            ),
+          ),
           const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  int _calculateWeeksNeeded(List<DateTime> days) {
-    // 找出本月最後一天在第幾週
-    for (var week = 5; week >= 4; week--) {
-      for (var day = 0; day < 7; day++) {
-        final index = week * 7 + day;
-        if (index < days.length) {
-          final date = days[index];
-          if (CalendarDateUtils.isInMonth(date, currentMonth)) {
-            return week + 1;
-          }
-        }
-      }
-    }
-    return 5;
-  }
+  Widget _buildCalendarContent(DateTime month) {
+    final days = CalendarDateUtils.getCalendarDays(month);
+    // Provider is needed for event colors
+    // Note: We are inside a consumer context (SchedulePage passes context or we access it here)
+    // Accessing provider here is fine.
+    final provider = context.watch<EventProvider>();
 
-  Widget _buildMonthHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            CalendarDateUtils.formatYearMonth(currentMonth),
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          Row(
-            children: [
-              _buildNavButton(
-                icon: Icons.chevron_left_rounded,
-                onTap: () {
-                  final prevMonth = DateTime(
-                    currentMonth.year,
-                    currentMonth.month - 1,
-                    1,
-                  );
-                  onMonthChanged?.call(prevMonth);
-                },
-              ),
-              _buildNavButton(
-                icon: Icons.chevron_right_rounded,
-                onTap: () {
-                  final nextMonth = DateTime(
-                    currentMonth.year,
-                    currentMonth.month + 1,
-                    1,
-                  );
-                  onMonthChanged?.call(nextMonth);
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.all(6),
-          child: Icon(icon, color: AppColors.textSecondary, size: 22),
-        ),
-      ),
-    );
+    return _buildCalendarGrid(days, provider, month);
   }
 
   Widget _buildWeekdayHeader() {
@@ -169,16 +174,26 @@ class MiniCalendar extends StatelessWidget {
     );
   }
 
-  Widget _buildCalendarGrid(List<DateTime> days, EventProvider provider) {
+  Widget _buildCalendarGrid(
+    List<DateTime> days,
+    EventProvider provider,
+    DateTime month,
+  ) {
     final weeks = <List<DateTime>>[];
     for (var i = 0; i < days.length; i += 7) {
       weeks.add(days.sublist(i, i + 7));
     }
 
+    // 只顯示屬於該月份的週數，或者固定顯示 6 週以保持高度一致
+    // 這裡我們只顯示實際需要的週數，但高度已由外層 SizedBox 固定，
+    // 所以少的週數會留白。
+    final weeksNeeded = _calculateWeeksNeeded(days, month);
+    final displayWeeks = weeks.take(weeksNeeded).toList();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Column(
-        children: weeks.map((week) {
+        children: displayWeeks.map((week) {
           return SizedBox(
             height: 40,
             child: Row(
@@ -187,18 +202,18 @@ class MiniCalendar extends StatelessWidget {
                 final isToday = CalendarDateUtils.isToday(date);
                 final isSelected = CalendarDateUtils.isSameDay(
                   date,
-                  selectedDate,
+                  widget.selectedDate,
                 );
 
                 return Expanded(
                   child: DayCell(
                     date: date,
-                    currentMonth: currentMonth,
+                    currentMonth: month,
                     isToday: isToday,
                     isSelected: isSelected,
                     eventColors: eventColors,
                     isCompact: true,
-                    onTap: () => onDateSelected?.call(date),
+                    onTap: () => widget.onDateSelected?.call(date),
                   ),
                 );
               }).toList(),
@@ -207,5 +222,20 @@ class MiniCalendar extends StatelessWidget {
         }).toList(),
       ),
     );
+  }
+
+  int _calculateWeeksNeeded(List<DateTime> days, DateTime month) {
+    for (var week = 5; week >= 4; week--) {
+      for (var day = 0; day < 7; day++) {
+        final index = week * 7 + day;
+        if (index < days.length) {
+          final date = days[index];
+          if (CalendarDateUtils.isInMonth(date, month)) {
+            return week + 1;
+          }
+        }
+      }
+    }
+    return 5;
   }
 }
