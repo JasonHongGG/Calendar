@@ -15,6 +15,13 @@ class AppColors {
     0xD9FFFFFF,
   ); // 85% opacity
 
+  // Glassmorphism System
+  static const Color glassSurface = Color(0xB3FFFFFF); // 70% opacity white
+  static const Color glassBorder = Color(0x4DFFFFFF); // 30% opacity white
+  static const Color glassInput = Color(
+    0x0D000000,
+  ); // Very light grey for inputs
+
   // 文字色彩
   static const Color textPrimary = Color(0xFF1E293B);
   static const Color textSecondary = Color(0xFF64748B);
@@ -26,15 +33,20 @@ class AppColors {
   static const Color dividerLight = Color(0xFFF1F5F9);
 
   // 事件顏色
+  // 事件顏色（已按色相排序）
   static const List<Color> eventColors = [
+    Color(0xFFEF4444), // 紅
+    Color(0xFFF97316), // 橙
+    Color(0xFFF59E0B), // 金黃
+    Color(0xFF84CC16), // 萊姆
     Color(0xFF10B981), // 翡翠綠
-    Color(0xFFF59E0B), // 琥珀橙
-    Color(0xFFEF4444), // 珊瑚紅
-    Color(0xFF8B5CF6), // 薰衣草紫
-    Color(0xFF06B6D4), // 青藍
-    Color(0xFFEC4899), // 玫瑰粉
-    Color(0xFF3B82F6), // 皇家藍
-    Color(0xFF14B8A6), // 青綠
+    Color(0xFF06B6D4), // 青
+    Color(0xFF3B82F6), // 藍
+    Color(0xFF6366F1), // 靛
+    Color(0xFF8B5CF6), // 紫
+    Color(0xFFD946EF), // 洋紅
+    Color(0xFFEC4899), // 粉紅
+    Color(0xFF64748B), // 灰藍
   ];
 
   // 底部導航

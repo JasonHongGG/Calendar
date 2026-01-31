@@ -31,7 +31,9 @@ class CalendarDateUtils {
 
   /// 檢查兩個日期是否為同一天
   static bool isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year && date1.month == date2.month && date1.day == date2.day;
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 
   /// 檢查日期是否為今天
@@ -67,6 +69,11 @@ class CalendarDateUtils {
   /// 格式化日期（如：2026/02/01）
   static String formatYearMonthDaySlash(DateTime date) {
     return DateFormat('yyyy/MM/dd', 'zh_TW').format(date);
+  }
+
+  /// 格式化年份（如：2026）
+  static String formatYear(DateTime date) {
+    return DateFormat('yyyy', 'zh_TW').format(date);
   }
 
   /// 格式化星期（如：週六）

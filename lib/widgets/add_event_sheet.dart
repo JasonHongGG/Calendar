@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/event.dart';
@@ -24,7 +26,9 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
   late DateTime _startDate;
   late DateTime _endDate;
-  int _selectedColorIndex = 0;
+
+  // -1 代表隨機顏色，0~N 代表 AppColors.eventColors 的索引
+  int _selectedColorIndex = -1;
 
   bool get _isEditing => widget.editEvent != null;
 
@@ -43,6 +47,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
       final initialDate = widget.initialDate ?? DateTime.now();
       _startDate = initialDate;
       _endDate = initialDate;
+      _selectedColorIndex = -1; // 預設隨機
     }
   }
 
@@ -55,184 +60,517 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // 計算內容高度，盡量讓它適應一頁
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.92,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 40,
+            offset: Offset(0, -10),
+          ),
+        ],
       ),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(left: 24, right: 24, top: 12, bottom: MediaQuery.of(context).viewInsets.bottom + 24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 拖曳指示條
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 頂部拖曳條
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textTertiary.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(100),
                 ),
               ),
-              const SizedBox(height: 20),
-              // 標題
-              _buildHeader(),
-              const SizedBox(height: 24),
-              // 事件名稱
-              _buildTitleField(),
-              const SizedBox(height: 20),
-              // 日期選擇
-              _buildDateRow(),
-              const SizedBox(height: 20),
-              // 顏色選擇
-              _buildColorPicker(),
-              const SizedBox(height: 20),
-              // 備註
-              _buildDescriptionField(),
-              const SizedBox(height: 24),
-              // 按鈕
-              _buildButtons(),
-            ],
+            ),
           ),
-        ),
+
+          Flexible(
+            child: SingleChildScrollView(
+              // 調整 padding，底部保留安全距離
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 標題
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _isEditing ? '編輯事件' : '新增事件',
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 事件名稱
+                    _buildStyledTextField(
+                      controller: _titleController,
+                      label: '事件名稱',
+                      placeholder: '輸入標題...',
+                      icon: Icons.edit_rounded,
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
+                          ? '請輸入事件名稱'
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 日期區域
+                    _buildDateSection(),
+                    const SizedBox(height: 16),
+
+                    // 顏色區域
+                    _buildColorSection(),
+                    const SizedBox(height: 16),
+
+                    // 備註區域 (高度縮減)
+                    _buildStyledTextField(
+                      controller: _descriptionController,
+                      label: '備註',
+                      placeholder: '添加備註...',
+                      icon: Icons.notes_rounded,
+                      maxLines: 1, // 減少行數至 1 行
+                      isLast: true,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 按鈕
+                    _buildActionButtons(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
+  Widget _buildStyledTextField({
+    required TextEditingController controller,
+    required String label,
+    required String placeholder,
+    required IconData icon,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+    bool isLast = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(gradient: AppColors.primaryGradient, borderRadius: BorderRadius.circular(12)),
-          child: Icon(_isEditing ? Icons.edit_rounded : Icons.add_rounded, color: Colors.white, size: 22),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
         ),
-        const SizedBox(width: 14),
-        Text(
-          _isEditing ? '編輯事件' : '新增事件',
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.background.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+          ),
+          child: TextFormField(
+            controller: controller,
+            maxLines: maxLines,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              hintText: placeholder,
+              hintStyle: const TextStyle(
+                color: AppColors.textTertiary,
+                fontWeight: FontWeight.normal,
+                fontSize: 14,
+              ),
+              prefixIcon: Icon(icon, color: AppColors.textTertiary, size: 20),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
+              isDense: true, // 緊湊佈局
+            ),
+            validator: validator,
+            textInputAction: isLast
+                ? TextInputAction.done
+                : TextInputAction.next,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildTitleField() {
-    return TextFormField(
-      controller: _titleController,
-      decoration: const InputDecoration(labelText: '事件名稱', hintText: '輸入事件名稱', prefixIcon: Icon(Icons.event_note_rounded)),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return '請輸入事件名稱';
-        }
-        return null;
-      },
-      textInputAction: TextInputAction.next,
+  Widget _buildDateSection() {
+    final duration = _endDate.difference(_startDate).inDays + 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 6),
+          child: Text(
+            '時間',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: _showDateRangePicker,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: AppColors.divider.withValues(alpha: 0.5),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadowLight,
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // 開始日期 (左側，佔比 1)
+                Expanded(
+                  flex: 1,
+                  child: _buildDateBlock(
+                    date: _startDate,
+                    label: '開始',
+                    icon: Icons.calendar_today_rounded,
+                    color: AppColors.gradientStart,
+                    alignment: CrossAxisAlignment.center, // 改為置中
+                  ),
+                ),
+
+                // 中間箭頭與天數 (置中，固定寬度或自適應但確保居中)
+                Container(
+                  constraints: const BoxConstraints(minWidth: 60),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppColors.textTertiary.withValues(alpha: 0.5),
+                        size: 20,
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.gradientStart.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '$duration 天',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.gradientStart,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 結束日期 (右側，佔比 1，對齊右邊)
+                Expanded(
+                  flex: 1,
+                  child: _buildDateBlock(
+                    date: _endDate,
+                    label: '結束',
+                    icon: Icons.event_available_rounded,
+                    color: AppColors.gradientEnd,
+                    alignment: CrossAxisAlignment.center, // 改為置中
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildDateRow() {
-    final isSameDay = CalendarDateUtils.isSameDay(_startDate, _endDate);
-    final shouldShowYear = _startDate.year != _endDate.year;
-
-    return GestureDetector(
-      onTap: _showDateRangePicker,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.divider),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDateBlock({
+    required DateTime date,
+    required String label,
+    required IconData icon,
+    required Color color,
+    required CrossAxisAlignment alignment,
+  }) {
+    // 確保內容相對於所在區塊對齊
+    return Column(
+      crossAxisAlignment: alignment,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min, // 緊縮 Row 以便對齊
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(gradient: AppColors.primaryGradient, borderRadius: BorderRadius.circular(10)),
-                  child: const Icon(Icons.date_range_rounded, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  '事件日期',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-                ),
-                const Spacer(),
-                Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
-              child: Row(
-                children: [
-                  if (isSameDay)
-                    Expanded(
-                      child: Align(alignment: Alignment.center, child: _buildDateChip(_startDate, true, shouldShowYear, showLabel: false)),
-                    )
-                  else ...[
-                    Expanded(
-                      child: Align(alignment: Alignment.centerLeft, child: _buildDateChip(_startDate, true, shouldShowYear)),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Icon(Icons.arrow_forward_rounded, color: AppColors.gradientStart.withValues(alpha: 0.5), size: 18),
-                    ),
-                    Expanded(
-                      child: Align(alignment: Alignment.centerRight, child: _buildDateChip(_endDate, false, shouldShowYear)),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.gradientStart.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text(
-                  '共 ${_endDate.difference(_startDate).inDays + 1} 天',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.gradientStart),
-                ),
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildDateChip(DateTime date, bool isStart, bool showYear, {bool showLabel = true}) {
-    final dateFontSize = showLabel ? 16.0 : 20.0;
-    final weekdayFontSize = showLabel ? 11.0 : 12.0;
-
-    return Column(
-      children: [
-        if (showLabel) ...[
-          Text(
-            isStart ? '開始' : '結束',
-            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.textTertiary),
+        const SizedBox(height: 6),
+        Text(
+          CalendarDateUtils.formatMonthDaySlash(date),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.5,
           ),
-          const SizedBox(height: 2),
-        ],
-        Text(
-          showYear ? CalendarDateUtils.formatYearMonthDaySlash(date) : CalendarDateUtils.formatMonthDaySlash(date),
-          style: TextStyle(fontSize: dateFontSize, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
         ),
+        const SizedBox(height: 2),
         Text(
-          CalendarDateUtils.formatWeekday(date),
-          style: TextStyle(fontSize: weekdayFontSize, color: AppColors.textSecondary),
+          '${CalendarDateUtils.formatYear(date)} • ${CalendarDateUtils.formatWeekday(date)}',
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textTertiary,
+          ),
         ),
       ],
     );
   }
 
+  Widget _buildColorSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            '標籤顏色',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 68, // 再次增加高度以容納更大的發光效果
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: 8,
+            ), // 增加垂直 padding 讓陰影顯示
+            scrollDirection: Axis.horizontal,
+            // +1 因為第一個是隨機按鈕
+            itemCount: AppColors.eventColors.length + 1,
+            separatorBuilder: (context, index) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                // 隨機按鈕
+                return _buildColorItem(
+                  index: -1,
+                  color: Colors.transparent, // 隨機按鈕用漸層處理
+                  isRandom: true,
+                );
+              }
+              // 實際顏色列表 (index - 1 對應到 List)
+              final colorIndex = index - 1;
+              return _buildColorItem(
+                index: colorIndex,
+                color: AppColors.eventColors[colorIndex],
+                isRandom: false,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColorItem({
+    required int index,
+    required Color color,
+    required bool isRandom,
+  }) {
+    final isSelected = _selectedColorIndex == index;
+    final size = isSelected ? 48.0 : 36.0;
+
+    // 定義彩虹漸層
+    const rainbowGradient = SweepGradient(
+      colors: [
+        Colors.red,
+        Colors.orange,
+        Colors.yellow,
+        Colors.green,
+        Colors.blue,
+        Colors.purple,
+        Colors.red,
+      ],
+    );
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedColorIndex = index),
+      child: Stack(
+        alignment: Alignment.center,
+        clipBehavior: Clip.none, // 允許陰影超出範圍
+        children: [
+          // 彩虹陰影 (僅在選中且為隨機按鈕時顯示)
+          if (isRandom && isSelected)
+            Positioned(
+              top: 4, // 向下偏移
+              child: ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  width: size,
+                  height: size,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: rainbowGradient,
+                  ),
+                ),
+              ),
+            ),
+
+          // 按鈕本體
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              // 如果是隨機，使用彩虹漸層
+              gradient: isRandom ? rainbowGradient : null,
+              color: isRandom ? null : color,
+              shape: BoxShape.circle,
+              // 普通顏色的陰影邏輯維持不變
+              boxShadow: (isSelected && !isRandom)
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: isSelected && !isRandom
+                ? const Icon(Icons.check_rounded, color: Colors.white, size: 20)
+                : (isRandom && isSelected
+                      ? const Icon(
+                          Icons.shuffle_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        )
+                      : (isRandom
+                            ? const Icon(
+                                Icons.shuffle_rounded,
+                                color: Colors.white70,
+                                size: 16,
+                              )
+                            : null)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.gradientStart.withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _saveEvent,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  _isEditing ? Icons.save_rounded : Icons.add_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _isEditing ? '儲存變更' : '新增事件',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _showDateRangePicker() async {
-    final result = await showDateRangePickerDialog(context, initialStartDate: _startDate, initialEndDate: _endDate);
+    final result = await showDateRangePickerDialog(
+      context,
+      initialStartDate: _startDate,
+      initialEndDate: _endDate,
+    );
 
     if (result != null) {
       setState(() {
@@ -242,112 +580,56 @@ class _AddEventSheetState extends State<AddEventSheet> {
     }
   }
 
-  Widget _buildColorPicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '選擇顏色',
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(AppColors.eventColors.length, (index) {
-            final color = AppColors.eventColors[index];
-            final isSelected = index == _selectedColorIndex;
-
-            return GestureDetector(
-              onTap: () => setState(() => _selectedColorIndex = index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: isSelected ? 36 : 32,
-                height: isSelected ? 36 : 32,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: isSelected ? Border.all(color: AppColors.textPrimary, width: 3) : null,
-                  boxShadow: isSelected ? [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 2))] : null,
-                ),
-                child: isSelected ? const Icon(Icons.check_rounded, color: Colors.white, size: 20) : null,
-              ),
-            );
-          }),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDescriptionField() {
-    return TextFormField(
-      controller: _descriptionController,
-      decoration: const InputDecoration(labelText: '備註（選填）', hintText: '輸入備註', prefixIcon: Icon(Icons.notes_rounded)),
-      maxLines: 2,
-      textInputAction: TextInputAction.done,
-    );
-  }
-
-  Widget _buildButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: const BorderSide(color: AppColors.divider),
-              ),
-            ),
-            child: const Text(
-              '取消',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 2,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [BoxShadow(color: AppColors.gradientStart.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
-            ),
-            child: ElevatedButton(
-              onPressed: _saveEvent,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              child: Text(
-                _isEditing ? '儲存變更' : '新增事件',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   void _saveEvent() {
     if (!_formKey.currentState!.validate()) return;
 
-    final provider = context.read<EventProvider>();
+    final provider = Provider.of<EventProvider>(context, listen: false);
 
-    final startDateTime = DateTime(_startDate.year, _startDate.month, _startDate.day);
+    final startDateTime = DateTime(
+      _startDate.year,
+      _startDate.month,
+      _startDate.day,
+    );
 
-    final endDateTime = DateTime(_endDate.year, _endDate.month, _endDate.day, 23, 59);
+    final endDateTime = DateTime(
+      _endDate.year,
+      _endDate.month,
+      _endDate.day,
+      23,
+      59,
+    );
+
+    int finalColorIndex;
+    if (_selectedColorIndex == -1) {
+      // 隨機選擇一個顏色
+      finalColorIndex = Random().nextInt(AppColors.eventColors.length);
+    } else {
+      finalColorIndex = _selectedColorIndex;
+    }
 
     if (_isEditing) {
-      final updatedEvent = widget.editEvent!.copyWith(title: _titleController.text.trim(), startDate: startDateTime, endDate: endDateTime, isAllDay: true, colorIndex: _selectedColorIndex, description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim());
+      final updatedEvent = widget.editEvent!.copyWith(
+        title: _titleController.text.trim(),
+        startDate: startDateTime,
+        endDate: endDateTime,
+        isAllDay: true,
+        colorIndex: finalColorIndex,
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+      );
       provider.updateEvent(updatedEvent);
     } else {
-      provider.addEvent(title: _titleController.text.trim(), startDate: startDateTime, endDate: endDateTime, isAllDay: true, colorIndex: _selectedColorIndex, description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim());
+      provider.addEvent(
+        title: _titleController.text.trim(),
+        startDate: startDateTime,
+        endDate: endDateTime,
+        isAllDay: true,
+        colorIndex: finalColorIndex,
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+      );
     }
 
     Navigator.pop(context);
@@ -355,11 +637,17 @@ class _AddEventSheetState extends State<AddEventSheet> {
 }
 
 /// 顯示新增事件表單
-void showAddEventSheet(BuildContext context, {DateTime? initialDate, Event? editEvent}) {
+void showAddEventSheet(
+  BuildContext context, {
+  DateTime? initialDate,
+  Event? editEvent,
+}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => AddEventSheet(initialDate: initialDate, editEvent: editEvent),
+    barrierColor: Colors.black.withValues(alpha: 0.4),
+    builder: (context) =>
+        AddEventSheet(initialDate: initialDate, editEvent: editEvent),
   );
 }
