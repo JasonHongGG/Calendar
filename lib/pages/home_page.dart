@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'weekly_view_page.dart';
 import 'month_view_page.dart';
 import 'schedule_page.dart';
 
@@ -14,7 +15,11 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [MonthViewPage(), SchedulePage()];
+  List<Widget> get _pages => const [
+    MonthViewPage(),
+    WeeklyViewPage(), // 新增週視圖
+    SchedulePage(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -64,10 +69,15 @@ class _HomePageState extends State<HomePage> {
                 icon: Icons.calendar_month_rounded,
                 label: '月視圖',
               ),
-              // 中間分隔線
               Container(width: 1, height: 24, color: AppColors.dividerLight),
               _buildNavItem(
                 index: 1,
+                icon: Icons.date_range_rounded, // 週視圖圖示
+                label: '週視圖',
+              ),
+              Container(width: 1, height: 24, color: AppColors.dividerLight),
+              _buildNavItem(
+                index: 2,
                 icon: Icons.format_list_bulleted_rounded,
                 label: '日程',
               ),
