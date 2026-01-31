@@ -44,13 +44,15 @@ class MonthViewPage extends StatelessWidget {
                   children: [
                     MonthCalendar(
                       currentMonth: currentMonth,
-                      selectedDate: selectedDate,
-                      onDateSelected: (date) {
-                        provider.setSelectedDate(date);
-                        // 如果選擇的日期不在當前月份，切換到該月份
-                        if (!CalendarDateUtils.isInMonth(date, currentMonth)) {
-                          provider.setCurrentMonth(date);
-                        }
+                      // selectedDate: selectedDate, // 移除選中日期，不顯示選中狀態
+                      // 移除 onDateSelected 以禁止選擇日期
+                      // onDateSelected: (date) { ... },
+                      onEventTap: (event) {
+                        showAddEventSheet(
+                          context,
+                          editEvent: event,
+                          initialDate: event.startDate,
+                        );
                       },
                     ),
                     const SizedBox(height: 20),
