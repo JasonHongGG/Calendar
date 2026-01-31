@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:provider/provider.dart';
 import '../models/event.dart';
 import '../providers/event_provider.dart';
@@ -87,11 +88,22 @@ class MonthCalendar extends StatelessWidget {
       weeks.add(days.sublist(i, i + 7));
     }
 
-    return Column(
-      children: weeks.map((week) {
-        return _buildWeekRow(week, events, provider);
-      }).toList(),
-    );
+    // 構建帶有分隔線的週列表
+    final children = <Widget>[];
+    for (var i = 0; i < weeks.length; i++) {
+      children.add(_buildWeekRow(weeks[i], events, provider));
+      if (i < weeks.length - 1) {
+        children.add(
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: AppColors.divider.withValues(alpha: 0.3),
+          ),
+        );
+      }
+    }
+
+    return Column(children: children);
   }
 
   Widget _buildWeekRow(
@@ -112,13 +124,14 @@ class MonthCalendar extends StatelessWidget {
         ? 0
         : layoutEvents.map((e) => e.lane).reduce((a, b) => a > b ? a : b);
 
-    // 限制最多顯示 3 到 4 行
-    final visibleLanes = maxLane + 1;
+    // 限制最多顯示 3 行 (根據用戶需求)
+    const maxRows = 3;
+    final visibleLanes = min(maxLane + 1, maxRows);
     final totalEventHeight = visibleLanes * (eventRowHeight + eventSpacing);
 
-    // 總高度
+    // 總高度: 基礎高度 + 事件總高度 + 底部緩衝
     final totalHeight = baseCellHeight + totalEventHeight + 4.0;
-    // 設定一個最小高度
+    // 設定一個最小高度，避免太擠
     final cellHeight = totalHeight < 80.0 ? 80.0 : totalHeight;
 
     return SizedBox(
@@ -266,66 +279,187 @@ class MonthCalendar extends StatelessWidget {
     double cellWidth,
   ) {
     final List<Widget> bars = [];
+    const maxRows = 3;
 
-    // 限定最大顯示行數
-    const maxVisibleLanes = 4;
-
+    // 1. 計算每天的事件總數
+    final eventCounts = List.filled(7, 0);
     for (final item in layouts) {
-      if (item.lane >= maxVisibleLanes) continue;
+      for (var i = 0; i < item.data.span; i++) {
+        final dayIndex = item.data.startOffset + i;
+        if (dayIndex < 7) {
+          eventCounts[dayIndex]++;
+        }
+      }
+    }
 
-      // 直接計算絕對位置和寬度
-      final barWidth = (cellWidth * item.data.span) - 4;
-      final leftOffset = (cellWidth * item.data.startOffset) + 2;
-      final topPos = topOffset + (item.lane * (rowHeight + spacing));
-
-      bars.add(
-        Positioned(
-          top: topPos,
-          left: leftOffset,
-          width: barWidth,
-          height: rowHeight,
-          child: GestureDetector(
-            onTap: () => onEventTap?.call(item.data.event),
-            child: Container(
-              alignment: Alignment.centerLeft,
-              decoration: BoxDecoration(
-                color:
-                    AppColors.eventColors[item.data.event.colorIndex %
-                        AppColors.eventColors.length],
-                borderRadius: BorderRadius.horizontal(
-                  left: item.data.isStart
-                      ? const Radius.circular(4)
-                      : Radius.zero,
-                  right: item.data.isEnd
-                      ? const Radius.circular(4)
-                      : Radius.zero,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors
-                        .eventColors[item.data.event.colorIndex %
-                            AppColors.eventColors.length]
-                        .withValues(alpha: 0.3),
-                    blurRadius: 2,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                item.data.event.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
+    // 2. 構建事件條 Widget 的輔助函數
+    Widget createEventBar(
+      _WeekEventData data,
+      double width,
+      bool forceStart,
+      bool forceEnd,
+    ) {
+      return GestureDetector(
+        onTap: () => onEventTap?.call(data.event),
+        child: Container(
+          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(
+            color:
+                AppColors.eventColors[data.event.colorIndex %
+                    AppColors.eventColors.length],
+            borderRadius: BorderRadius.horizontal(
+              left: (data.isStart || forceStart)
+                  ? const Radius.circular(4)
+                  : Radius.zero,
+              right: (data.isEnd || forceEnd)
+                  ? const Radius.circular(4)
+                  : Radius.zero,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors
+                    .eventColors[data.event.colorIndex %
+                        AppColors.eventColors.length]
+                    .withValues(alpha: 0.3),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            data.event.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
       );
+    }
+
+    // 3. 遍歷事件並生成 Widget
+    for (final item in layouts) {
+      // 超過第3行(index 2)的事件，除了在第3行本身可能顯示的部分，完全忽略
+      if (item.lane > 2) continue;
+
+      // 如果是在前兩行 (0, 1)，直接顯示
+      if (item.lane < 2) {
+        final barWidth = (cellWidth * item.data.span) - 4;
+        final leftOffset = (cellWidth * item.data.startOffset) + 2;
+        final topPos = topOffset + (item.lane * (rowHeight + spacing));
+
+        bars.add(
+          Positioned(
+            top: topPos,
+            left: leftOffset,
+            width: barWidth,
+            height: rowHeight,
+            child: createEventBar(item.data, barWidth, false, false),
+          ),
+        );
+      } else if (item.lane == 2) {
+        // 如果是在第 3 行，需要檢查每一天是否 "溢出"
+        // 只有在當天總事件數 <= 3 時，才顯示該事件的該天部分
+        // 若 > 3，該位置留給 +N
+        int currentStart = -1;
+        int currentLength = 0;
+
+        for (var i = 0; i < item.data.span; i++) {
+          final dayIndex = item.data.startOffset + i;
+          if (dayIndex >= 7) break;
+
+          if (eventCounts[dayIndex] <= maxRows) {
+            // 這個位置可以放事件
+            if (currentStart == -1) {
+              currentStart = dayIndex;
+            }
+            currentLength++;
+          } else {
+            // 這個位置溢出，必須截斷之前的段落
+            if (currentStart != -1) {
+              final barWidth = (cellWidth * currentLength) - 4;
+              final leftOffset = (cellWidth * currentStart) + 2;
+              final topPos = topOffset + (item.lane * (rowHeight + spacing));
+
+              bars.add(
+                Positioned(
+                  top: topPos,
+                  left: leftOffset,
+                  width: barWidth,
+                  height: rowHeight,
+                  child: createEventBar(
+                    item.data,
+                    barWidth,
+                    currentStart == item.data.startOffset, // forceStart
+                    false, // forceEnd will be handled by next segment logic or original
+                  ),
+                ),
+              );
+              currentStart = -1;
+              currentLength = 0;
+            }
+          }
+        }
+        // 處理剩餘段落
+        if (currentStart != -1) {
+          final barWidth = (cellWidth * currentLength) - 4;
+          final leftOffset = (cellWidth * currentStart) + 2;
+          final topPos = topOffset + (item.lane * (rowHeight + spacing));
+
+          bars.add(
+            Positioned(
+              top: topPos,
+              left: leftOffset,
+              width: barWidth,
+              height: rowHeight,
+              child: createEventBar(
+                item.data,
+                barWidth,
+                currentStart == item.data.startOffset,
+                currentStart + currentLength ==
+                    item.data.startOffset + item.data.span,
+              ),
+            ),
+          );
+        }
+      }
+    }
+
+    // 4. 生成 +N 指示器
+    // 在第 3 行 (index 2) 的位置
+    final overflowLane = 2;
+    for (var i = 0; i < 7; i++) {
+      if (eventCounts[i] > maxRows) {
+        final count = eventCounts[i] - 2; // 前兩行顯示了 2 個，剩下都縮在第 3 行
+        final leftOffset = (cellWidth * i) + 2;
+        final topPos = topOffset + (overflowLane * (rowHeight + spacing));
+        final width = cellWidth - 4;
+
+        bars.add(
+          Positioned(
+            top: topPos,
+            left: leftOffset,
+            width: width,
+            height: rowHeight,
+            child: Container(
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                '+$count',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
     }
 
     return bars;
