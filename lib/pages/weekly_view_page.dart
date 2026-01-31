@@ -295,8 +295,10 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
   }
 
   List<DateTime> _getDaysInWeek(DateTime date) {
-    final monday = date.subtract(Duration(days: date.weekday - 1));
-    return List.generate(7, (index) => monday.add(Duration(days: index)));
+    // 改為週日為一週的第一天
+    final daysToSubtract = date.weekday % 7;
+    final sunday = date.subtract(Duration(days: daysToSubtract));
+    return List.generate(7, (index) => sunday.add(Duration(days: index)));
   }
 
   // 簡單計算週數 (僅供顯示用)

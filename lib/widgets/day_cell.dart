@@ -24,7 +24,14 @@ class DayCell extends StatelessWidget {
   });
 
   bool get _isInMonth => CalendarDateUtils.isInMonth(date, currentMonth);
-  bool get _isWeekend => CalendarDateUtils.isWeekend(date);
+  bool get _isSunday => date.weekday == DateTime.sunday;
+  bool get _isSaturday => date.weekday == DateTime.saturday;
+
+  Color get _dayColor {
+    if (_isSunday) return AppColors.textSunday;
+    if (_isSaturday) return AppColors.textSaturday;
+    return AppColors.textPrimary;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,15 +54,20 @@ class DayCell extends StatelessWidget {
               width: isCompact ? 22 : 26,
               height: isCompact ? 22 : 26,
               decoration: BoxDecoration(
-                gradient: isToday ? AppColors.primaryGradient : null,
-                color: isSelected && !isToday
-                    ? AppColors.gradientStart.withValues(alpha: 0.8) // 選中時的深色背景
-                    : null,
+                gradient: null, // 移除原本的漸層，改成純色
+                color: isToday
+                    ? _dayColor // 今天：背景為該日代表色 (紅/藍/黑)
+                    : (isSelected
+                          ? AppColors.gradientStart.withValues(
+                              alpha: 0.8,
+                            ) // 選中：深色背景
+                          : null),
                 shape: BoxShape.circle,
                 boxShadow: (isToday || isSelected)
                     ? [
                         BoxShadow(
-                          color: AppColors.gradientStart.withValues(alpha: 0.3),
+                          color: (isToday ? _dayColor : AppColors.gradientStart)
+                              .withValues(alpha: 0.3),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -97,10 +109,12 @@ class DayCell extends StatelessWidget {
     if (!_isInMonth) {
       return AppColors.textTertiary.withValues(alpha: 0.5);
     }
-    if (_isWeekend) {
-      return AppColors.textSecondary;
+    // 今天和選中狀態文字白色
+    if (isToday || isSelected) {
+      return Colors.white;
     }
-    return AppColors.textPrimary;
+    // 其他狀態顯示該日代表色
+    return _dayColor;
   }
 
   Widget _buildCompactEventDots() {

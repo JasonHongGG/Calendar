@@ -27,6 +27,8 @@ class AppColors {
   static const Color textSecondary = Color(0xFF64748B);
   static const Color textTertiary = Color(0xFF94A3B8);
   static const Color textOnGradient = Color(0xFFFFFFFF);
+  static const Color textSunday = Color(0xFFEF4444); // 紅色
+  static const Color textSaturday = Color(0xFF3B82F6); // 藍色
 
   // 分隔線
   static const Color divider = Color(0xFFE2E8F0);

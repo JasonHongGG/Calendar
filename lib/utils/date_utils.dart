@@ -19,7 +19,9 @@ class CalendarDateUtils {
   static DateTime getCalendarStartDate(DateTime date) {
     final firstDay = getFirstDayOfMonth(date);
     // weekday: 1=週一, 7=週日
-    final daysToSubtract = (firstDay.weekday - 1) % 7;
+    // 如果是週日(7)，餘數為0，不減
+    // 如果是週一(1)，餘數為1，減1天
+    final daysToSubtract = firstDay.weekday % 7;
     return firstDay.subtract(Duration(days: daysToSubtract));
   }
 
@@ -102,7 +104,7 @@ class CalendarDateUtils {
   }
 
   /// 取得星期標題列表
-  static List<String> get weekdayLabels => ['一', '二', '三', '四', '五', '六', '日'];
+  static List<String> get weekdayLabels => ['日', '一', '二', '三', '四', '五', '六'];
 
   /// 檢查日期是否為周末
   static bool isWeekend(DateTime date) {

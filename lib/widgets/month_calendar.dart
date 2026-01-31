@@ -57,7 +57,17 @@ class MonthCalendar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: CalendarDateUtils.weekdayLabels.map((label) {
-          final isWeekend = label == '六' || label == '日';
+          final isSunday = label == '日';
+          final isSaturday = label == '六';
+          Color textColor;
+          if (isSunday) {
+            textColor = AppColors.textSunday;
+          } else if (isSaturday) {
+            textColor = AppColors.textSaturday;
+          } else {
+            textColor = AppColors.textSecondary;
+          }
+
           return Expanded(
             child: Center(
               child: Text(
@@ -65,9 +75,7 @@ class MonthCalendar extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: isWeekend
-                      ? AppColors.textTertiary
-                      : AppColors.textSecondary,
+                  color: textColor,
                 ),
               ),
             ),
