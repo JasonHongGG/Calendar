@@ -16,108 +16,78 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackgroundTranslucent,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 0), // 外距由父層控制或設為 0
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _color.withValues(alpha: 0.3), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadow.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Row(
-            children: [
-              // 左側顏色指示條
-              Container(width: 5, height: 80, color: _color),
-              // 內容區域
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Row(
+              children: [
+                // 1. 顏色指示 (圓點)
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: _color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _color.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                // 2. 標題與地點
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 標題
                       Text(
                         event.title,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
+                          height: 1.2,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
-                      // 時間
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time_rounded,
-                            size: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            CalendarDateUtils.formatTimeRange(
-                              event.startDate,
-                              event.endDate,
-                              event.isAllDay,
-                            ),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          // 多日事件顯示日期範圍
-                          if (event.isMultiDay) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _color.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '${event.durationDays} 天',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: _color,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      // 地點
                       if (event.location != null &&
                           event.location!.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Row(
                           children: [
                             Icon(
-                              Icons.location_on_outlined,
-                              size: 14,
-                              color: AppColors.textSecondary,
+                              Icons.location_on_rounded,
+                              size: 12,
+                              color: AppColors.textTertiary,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 2),
                             Expanded(
                               child: Text(
                                 event.location!,
                                 style: const TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   color: AppColors.textSecondary,
                                 ),
                                 maxLines: 1,
@@ -130,18 +100,27 @@ class EventCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-              // 刪除按鈕
-              if (onDelete != null)
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.textTertiary,
-                    size: 20,
+
+                // 3. 刪除按鈕
+                if (onDelete != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.delete_outline_rounded,
+                        color: AppColors.textTertiary.withValues(alpha: 0.4),
+                        size: 22,
+                      ),
+                      onPressed: onDelete,
+                      style: IconButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        hoverColor: Colors.red.withValues(alpha: 0.1),
+                        highlightColor: Colors.red.withValues(alpha: 0.1),
+                      ),
+                    ),
                   ),
-                  onPressed: onDelete,
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

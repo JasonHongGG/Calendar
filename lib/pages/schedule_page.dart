@@ -42,9 +42,7 @@ class _SchedulePageState extends State<SchedulePage> {
         child: Column(
           children: [
             const SizedBox(height: 16),
-            // 頁面標題
-            _buildPageTitle(),
-            const SizedBox(height: 16),
+
             // 迷你月曆
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -79,50 +77,13 @@ class _SchedulePageState extends State<SchedulePage> {
     );
   }
 
-  Widget _buildPageTitle() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.calendar_view_day_rounded,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          const Text(
-            '日程安排',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Map<DateTime, List<Event>> _getGroupedEvents(EventProvider provider) {
     final Map<DateTime, List<Event>> grouped = {};
-    final today = CalendarDateUtils.dateOnly(DateTime.now());
+    final selectedDate = provider.selectedDate;
 
-    // 從今天開始的 30 天
-    for (var i = 0; i < 30; i++) {
-      final date = today.add(Duration(days: i));
-      final eventsOnDate = provider.getEventsForDate(date);
-      if (eventsOnDate.isNotEmpty ||
-          CalendarDateUtils.isSameDay(date, provider.selectedDate)) {
-        grouped[date] = eventsOnDate;
-      }
-    }
+    // 僅顯示選中日期的事件
+    final eventsOnDate = provider.getEventsForDate(selectedDate);
+    grouped[selectedDate] = eventsOnDate;
 
     return grouped;
   }
@@ -191,139 +152,98 @@ class _SchedulePageState extends State<SchedulePage> {
 
   Widget _buildDateSection(DateTime date, List<Event> events) {
     final isToday = CalendarDateUtils.isToday(date);
-    final provider = context.read<EventProvider>();
-    final isSelected = CalendarDateUtils.isSameDay(date, provider.selectedDate);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: isSelected && !isToday
-            ? Border.all(
-                color: AppColors.gradientStart.withValues(alpha: 0.3),
-                width: 2,
-              )
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 日期標題
-          _buildDateHeader(date, isToday),
-          // 事件列表
-          if (events.isEmpty)
-            _buildEmptyDateMessage(date)
-          else
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                children: events.map((event) {
-                  return EventCard(
-                    event: event,
-                    onTap: () => showAddEventSheet(context, editEvent: event),
-                    onDelete: () => _confirmDelete(event),
-                  );
-                }).toList(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 日期標題
+        _buildDateHeader(date, isToday),
+        const SizedBox(height: 16),
+        // 事件列表
+        if (events.isEmpty)
+          _buildEmptyDateMessage(date)
+        else
+          ...events.map((event) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: EventCard(
+                event: event,
+                onTap: () => showAddEventSheet(context, editEvent: event),
+                onDelete: () => _confirmDelete(event),
               ),
-            ),
-        ],
-      ),
+            );
+          }),
+      ],
     );
   }
 
   Widget _buildDateHeader(DateTime date, bool isToday) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          // 日期數字
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              gradient: isToday ? AppColors.primaryGradient : null,
-              color: isToday ? null : AppColors.background,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: isToday
-                  ? [
-                      BoxShadow(
-                        color: AppColors.gradientStart.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '${date.day}',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: isToday ? Colors.white : AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  CalendarDateUtils.formatWeekday(date),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: isToday
-                        ? Colors.white.withValues(alpha: 0.9)
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // 大大的日期數字
+        Text(
+          '${date.day}',
+          style: const TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            height: 1.0,
+            letterSpacing: -2,
           ),
-          const SizedBox(width: 14),
-          // 日期資訊
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                CalendarDateUtils.formatMonthDay(date),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
+        ),
+        const SizedBox(width: 12),
+        // 月份與星期
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${date.month}月',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                height: 1.0,
               ),
-              if (isToday) ...[
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    '今天',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              CalendarDateUtils.formatWeekday(date),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        const Spacer(),
+        // 今天標籤
+        if (isToday)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.gradientStart.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
               ],
-            ],
+            ),
+            child: const Text(
+              'Today',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
-        ],
-      ),
+      ],
     );
   }
 
