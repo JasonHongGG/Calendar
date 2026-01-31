@@ -9,15 +9,61 @@ import '../widgets/month_calendar.dart';
 import '../widgets/add_event_sheet.dart';
 
 /// 月視圖頁面
-class MonthViewPage extends StatelessWidget {
+class MonthViewPage extends StatefulWidget {
   const MonthViewPage({super.key});
 
   @override
+  State<MonthViewPage> createState() => _MonthViewPageState();
+}
+
+class _MonthViewPageState extends State<MonthViewPage> {
+  late PageController _pageController;
+  // Epoch: 2020/01 is index 0
+  static const int _startYear = 2020;
+  static const int _startMonth = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize controller based on provider's current month
+    final provider = context.read<EventProvider>();
+    final initialIndex = _calculateIndex(provider.currentMonth);
+    _pageController = PageController(initialPage: initialIndex);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Sync controller if provider changed externally (e.g. "Today" action elsewhere)
+    // Note: This might trigger during component build, so be careful.
+    // Ideally, we listen to the provider in a way that doesn't conflict with onPageChanged.
+    // But since onPageChanged drives the provider, this check prevents loops if logic is correct.
+    final provider = context.read<EventProvider>();
+    final currentIndex = _calculateIndex(provider.currentMonth);
+    if (_pageController.hasClients &&
+        _pageController.page?.round() != currentIndex) {
+      _pageController.jumpToPage(currentIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  int _calculateIndex(DateTime date) {
+    return (date.year - _startYear) * 12 + (date.month - _startMonth);
+  }
+
+  DateTime _calculateDateFromIndex(int index) {
+    return DateTime(_startYear, _startMonth + index);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final provider = context.watch<EventProvider>();
-    final currentMonth = provider.currentMonth;
-    final selectedDate = provider.selectedDate;
-    final todayEvents = provider.todayEvents;
+    // Avoid watching at the top level to prevent PageView rebuilds
+    // final provider = context.watch<EventProvider>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -25,50 +71,81 @@ class MonthViewPage extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 16),
-            // 漸層標題
+            // Header: Only this part needs to rebuild when month changes
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: CalendarHeader(
-                title:
-                    '${currentMonth.year}/${currentMonth.month.toString().padLeft(2, '0')}',
-                onPrevious: () => provider.previousMonth(),
-                onNext: () => provider.nextMonth(),
-                onSettings: () {
-                  // TODO: Navigate to settings page
+              child: Consumer<EventProvider>(
+                builder: (context, provider, child) {
+                  final currentMonth = provider.currentMonth;
+                  return CalendarHeader(
+                    title:
+                        '${currentMonth.year}/${currentMonth.month.toString().padLeft(2, '0')}',
+                    onPrevious: () {
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    onNext: () {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    onSettings: () {
+                      // TODO: Navigate to settings page
+                    },
+                  );
                 },
               ),
             ),
             const SizedBox(height: 0),
-            // 月曆
+            // PageView Calendar
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    MonthCalendar(
-                      currentMonth: currentMonth,
-                      // selectedDate: selectedDate, // 移除選中日期，不顯示選中狀態
-                      // 移除 onDateSelected 以禁止選擇日期
-                      // onDateSelected: (date) { ... },
-                      onEventTap: (event) {
-                        showAddEventSheet(
-                          context,
-                          editEvent: event,
-                          initialDate: event.startDate,
-                        );
-                      },
+              child: PageView.builder(
+                allowImplicitScrolling: true, // Pre-cache pages to prevent jank
+                controller: _pageController,
+                onPageChanged: (index) {
+                  final provider = context.read<EventProvider>();
+                  final newMonth = _calculateDateFromIndex(index);
+                  if (newMonth.year != provider.currentMonth.year ||
+                      newMonth.month != provider.currentMonth.month) {
+                    provider.setCurrentMonth(newMonth);
+                  }
+                },
+                itemBuilder: (context, index) {
+                  final monthDate = _calculateDateFromIndex(index);
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        MonthCalendar(
+                          currentMonth: monthDate,
+                          onEventTap: (event) {
+                            showAddEventSheet(
+                              context,
+                              editEvent: event,
+                              initialDate: event.startDate,
+                            );
+                          },
+                        ),
+                        const Spacer(),
+                      ],
                     ),
-                    const SizedBox(height: 20),
-
-                    const SizedBox(height: 100), // 給 FAB 留空間
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
-      floatingActionButton: _buildFAB(context, selectedDate),
+      // FAB needs to listen to selectedDate changes
+      floatingActionButton: Selector<EventProvider, DateTime>(
+        selector: (context, provider) => provider.selectedDate,
+        builder: (context, selectedDate, child) {
+          return _buildFAB(context, selectedDate);
+        },
+      ),
     );
   }
 

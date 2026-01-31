@@ -25,8 +25,14 @@ class MonthCalendar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final days = CalendarDateUtils.getCalendarDays(currentMonth);
-    final provider = context.watch<EventProvider>();
-    final events = provider.getEventsForMonth(currentMonth);
+    // Use select to only rebuild when the events list changes (e.g. add/delete event)
+    // NOT when currentMonth changes in the provider.
+    final allEvents = context.select<EventProvider, List<Event>>(
+      (p) => p.events,
+    );
+
+    // Filter events for this specific month instance
+    final events = _getEventsForMonth(allEvents, currentMonth);
 
     return Container(
       decoration: BoxDecoration(
@@ -46,10 +52,24 @@ class MonthCalendar extends StatelessWidget {
           _buildWeekdayHeader(),
           const Divider(height: 1),
           // 日曆網格
-          _buildCalendarGrid(days, events, provider),
+          _buildCalendarGrid(days, events),
         ],
       ),
     );
+  }
+
+  // Local helper to filter events, avoiding dependency on Provider instance methods
+  List<Event> _getEventsForMonth(List<Event> allEvents, DateTime month) {
+    final firstDay = CalendarDateUtils.getFirstDayOfMonth(month);
+    final lastDay = CalendarDateUtils.getLastDayOfMonth(month);
+
+    return allEvents.where((event) {
+      final startOnly = CalendarDateUtils.dateOnly(event.startDate);
+      final endOnly = CalendarDateUtils.dateOnly(event.endDate);
+
+      // 事件與月份有交集
+      return !endOnly.isBefore(firstDay) && !startOnly.isAfter(lastDay);
+    }).toList();
   }
 
   Widget _buildWeekdayHeader() {
@@ -85,11 +105,7 @@ class MonthCalendar extends StatelessWidget {
     );
   }
 
-  Widget _buildCalendarGrid(
-    List<DateTime> days,
-    List<Event> events,
-    EventProvider provider,
-  ) {
+  Widget _buildCalendarGrid(List<DateTime> days, List<Event> events) {
     // 將日期分成 6 週，但過濾掉完全不屬於當前月份的週
     final allWeeks = <List<DateTime>>[];
     for (var i = 0; i < days.length; i += 7) {
@@ -105,27 +121,21 @@ class MonthCalendar extends StatelessWidget {
     // 計算動態高度
     // 基準：5週的高度約為 420 (84 * 5)
     // 84 = 30 (Date) + 54 (3 rows * 18)
-    const targetTotalHeight = 460.0;
+    const targetTotalHeight = 470.0;
     final cellHeight = targetTotalHeight / visibleWeeks.length;
 
     // 計算動態最大事件行數
     // cellHeight = 30 (base) + events
     // events space = cellHeight - 30
     // row height = 20 (18 bar + 2 spacing)
-    final availableEventSpace = cellHeight - 30.0;
+    final availableEventSpace = cellHeight - 34.0;
     final maxEventRows = (availableEventSpace / 20.0).floor();
 
     // 構建帶有分隔線的週列表
     final children = <Widget>[];
     for (var i = 0; i < visibleWeeks.length; i++) {
       children.add(
-        _buildWeekRow(
-          visibleWeeks[i],
-          events,
-          provider,
-          cellHeight,
-          maxEventRows,
-        ),
+        _buildWeekRow(visibleWeeks[i], events, cellHeight, maxEventRows),
       );
       if (i < visibleWeeks.length - 1) {
         children.add(
@@ -144,14 +154,13 @@ class MonthCalendar extends StatelessWidget {
   Widget _buildWeekRow(
     List<DateTime> week,
     List<Event> allEvents,
-    EventProvider provider,
     double cellHeight,
     int maxRows,
   ) {
     // 計算並佈局這一週的事件
     final layoutEvents = _layoutEventsForWeek(week, allEvents);
 
-    const baseCellHeight = 30.0;
+    const baseCellHeight = 34.0;
     const eventRowHeight = 18.0;
     const eventSpacing = 2.0;
 
