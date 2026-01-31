@@ -134,6 +134,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
   Widget _buildDateRow() {
     final isSameDay = CalendarDateUtils.isSameDay(_startDate, _endDate);
+    final shouldShowYear = _startDate.year != _endDate.year;
 
     return GestureDetector(
       onTap: _showDateRangePicker,
@@ -168,51 +169,64 @@ class _AddEventSheetState extends State<AddEventSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildDateChip(_startDate, true),
-                  if (!isSameDay) ...[
+                  if (isSameDay)
+                    Expanded(
+                      child: Align(alignment: Alignment.center, child: _buildDateChip(_startDate, true, shouldShowYear, showLabel: false)),
+                    )
+                  else ...[
+                    Expanded(
+                      child: Align(alignment: Alignment.centerLeft, child: _buildDateChip(_startDate, true, shouldShowYear)),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Icon(Icons.arrow_forward_rounded, color: AppColors.gradientStart.withValues(alpha: 0.5), size: 18),
                     ),
-                    _buildDateChip(_endDate, false),
+                    Expanded(
+                      child: Align(alignment: Alignment.centerRight, child: _buildDateChip(_endDate, false, shouldShowYear)),
+                    ),
                   ],
                 ],
               ),
             ),
-            if (!isSameDay) ...[
-              const SizedBox(height: 8),
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: AppColors.gradientStart.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                  child: Text(
-                    '共 ${_endDate.difference(_startDate).inDays + 1} 天',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.gradientStart),
-                  ),
+            const SizedBox(height: 8),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: AppColors.gradientStart.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: Text(
+                  '共 ${_endDate.difference(_startDate).inDays + 1} 天',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.gradientStart),
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDateChip(DateTime date, bool isStart) {
+  Widget _buildDateChip(DateTime date, bool isStart, bool showYear, {bool showLabel = true}) {
+    final dateFontSize = showLabel ? 16.0 : 20.0;
+    final weekdayFontSize = showLabel ? 11.0 : 12.0;
+
     return Column(
       children: [
+        if (showLabel) ...[
+          Text(
+            isStart ? '開始' : '結束',
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.textTertiary),
+          ),
+          const SizedBox(height: 2),
+        ],
         Text(
-          isStart ? '開始' : '結束',
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: AppColors.textTertiary),
+          showYear ? CalendarDateUtils.formatYearMonthDaySlash(date) : CalendarDateUtils.formatMonthDaySlash(date),
+          style: TextStyle(fontSize: dateFontSize, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
         ),
-        const SizedBox(height: 2),
         Text(
-          CalendarDateUtils.formatMonthDay(date),
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          CalendarDateUtils.formatWeekday(date),
+          style: TextStyle(fontSize: weekdayFontSize, color: AppColors.textSecondary),
         ),
-        Text(CalendarDateUtils.formatWeekday(date), style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }

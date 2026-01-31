@@ -7,8 +7,9 @@ class DateRangePicker extends StatefulWidget {
   final DateTime initialStartDate;
   final DateTime initialEndDate;
   final Function(DateTime start, DateTime end) onDateRangeSelected;
+  final VoidCallback? onConfirm;
 
-  const DateRangePicker({super.key, required this.initialStartDate, required this.initialEndDate, required this.onDateRangeSelected});
+  const DateRangePicker({super.key, required this.initialStartDate, required this.initialEndDate, required this.onDateRangeSelected, this.onConfirm});
 
   @override
   State<DateRangePicker> createState() => _DateRangePickerState();
@@ -80,35 +81,48 @@ class _DateRangePickerState extends State<DateRangePicker> {
 
   Widget _buildMonthHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
+      padding: const EdgeInsets.fromLTRB(8, 16, 12, 0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          _buildNavButton(
+            icon: Icons.chevron_left_rounded,
+            onTap: () {
+              setState(() {
+                _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
+              });
+            },
+          ),
+          const SizedBox(width: 4),
           Text(
             CalendarDateUtils.formatYearMonth(_currentMonth),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
           ),
-          Row(
-            children: [
-              _buildNavButton(
-                icon: Icons.chevron_left_rounded,
-                onTap: () {
-                  setState(() {
-                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
-                  });
-                },
-              ),
-              _buildNavButton(
-                icon: Icons.chevron_right_rounded,
-                onTap: () {
-                  setState(() {
-                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
-                  });
-                },
-              ),
-            ],
+          const SizedBox(width: 4),
+          _buildNavButton(
+            icon: Icons.chevron_right_rounded,
+            onTap: () {
+              setState(() {
+                _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+              });
+            },
           ),
+          const Spacer(),
+          if (widget.onConfirm != null) _buildConfirmButton(onTap: widget.onConfirm!) else const SizedBox(width: 40, height: 40),
         ],
+      ),
+    );
+  }
+
+  Widget _buildConfirmButton({required VoidCallback onTap}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: const Icon(Icons.check_rounded, color: AppColors.gradientStart, size: 24),
+        ),
       ),
     );
   }
@@ -120,7 +134,7 @@ class _DateRangePickerState extends State<DateRangePicker> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(6),
           child: Icon(icon, color: AppColors.textSecondary, size: 24),
         ),
       ),
@@ -334,6 +348,8 @@ class _DateRangePickerState extends State<DateRangePicker> {
   }
 
   Widget _buildSelectedRangeDisplay() {
+    final showYear = _startDate != null && _endDate != null && _startDate!.year != _endDate!.year;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -345,14 +361,14 @@ class _DateRangePickerState extends State<DateRangePicker> {
         child: Row(
           children: [
             Expanded(
-              child: _buildDateDisplay(label: '開始', date: _startDate, isStart: true),
+              child: _buildDateDisplay(label: '開始', date: _startDate, isStart: true, showYear: showYear),
             ),
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 12),
               child: Icon(Icons.arrow_forward_rounded, color: AppColors.gradientStart.withValues(alpha: 0.5), size: 20),
             ),
             Expanded(
-              child: _buildDateDisplay(label: '結束', date: _endDate, isStart: false),
+              child: _buildDateDisplay(label: '結束', date: _endDate, isStart: false, showYear: showYear),
             ),
           ],
         ),
@@ -360,7 +376,7 @@ class _DateRangePickerState extends State<DateRangePicker> {
     );
   }
 
-  Widget _buildDateDisplay({required String label, required DateTime? date, required bool isStart}) {
+  Widget _buildDateDisplay({required String label, required DateTime? date, required bool isStart, required bool showYear}) {
     final isActive = isStart ? !_isSelectingEndDate : _isSelectingEndDate;
 
     return Container(
@@ -377,9 +393,15 @@ class _DateRangePickerState extends State<DateRangePicker> {
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: isActive ? AppColors.gradientStart : AppColors.textTertiary),
           ),
           const SizedBox(height: 4),
-          Text(
-            date != null ? CalendarDateUtils.formatMonthDay(date) : '未選擇',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: date != null ? AppColors.textPrimary : AppColors.textTertiary),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              date != null ? (showYear ? CalendarDateUtils.formatYearMonthDaySlash(date) : CalendarDateUtils.formatMonthDaySlash(date)) : '未選擇',
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.visible,
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: date != null ? AppColors.textPrimary : AppColors.textTertiary),
+            ),
           ),
         ],
       ),
@@ -393,6 +415,7 @@ Future<DateTimeRange?> showDateRangePickerDialog(BuildContext context, {required
 
   await showDialog(
     context: context,
+    barrierDismissible: true,
     builder: (context) => Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(20),
@@ -405,45 +428,9 @@ Future<DateTimeRange?> showDateRangePickerDialog(BuildContext context, {required
             onDateRangeSelected: (start, end) {
               result = DateTimeRange(start: start, end: end);
             },
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text(
-                  '取消',
-                  style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: AppColors.gradientStart.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))],
-                ),
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text(
-                    '確定',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-            ],
+            onConfirm: () {
+              Navigator.pop(context);
+            },
           ),
         ],
       ),
