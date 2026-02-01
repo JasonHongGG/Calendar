@@ -6,6 +6,7 @@ import '../providers/event_provider.dart';
 import '../theme/app_colors.dart';
 import '../utils/date_utils.dart';
 import 'day_cell.dart';
+import '../theme/calendar_layout.dart';
 
 /// 完整月曆組件
 class MonthCalendar extends StatelessWidget {
@@ -25,8 +26,7 @@ class MonthCalendar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final days = CalendarDateUtils.getCalendarDays(currentMonth);
-    // Use select to only rebuild when the events list changes (e.g. add/delete event)
-    // NOT when currentMonth changes in the provider.
+    // Use select to only rebuild when the events list changes
     final allEvents = context.select<EventProvider, List<Event>>(
       (p) => p.events,
     );
@@ -34,28 +34,8 @@ class MonthCalendar extends StatelessWidget {
     // Filter events for this specific month instance
     final events = _getEventsForMonth(allEvents, currentMonth);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // 星期標題
-          _buildWeekdayHeader(),
-          const Divider(height: 1),
-          // 日曆網格
-          _buildCalendarGrid(days, events),
-        ],
-      ),
-    );
+    // MonthCalendar now only renders the grid content
+    return _buildCalendarGrid(days, events);
   }
 
   // Local helper to filter events, avoiding dependency on Provider instance methods
@@ -72,39 +52,6 @@ class MonthCalendar extends StatelessWidget {
     }).toList();
   }
 
-  Widget _buildWeekdayHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: CalendarDateUtils.weekdayLabels.map((label) {
-          final isSunday = label == '日';
-          final isSaturday = label == '六';
-          Color textColor;
-          if (isSunday) {
-            textColor = AppColors.textSunday;
-          } else if (isSaturday) {
-            textColor = AppColors.textSaturday;
-          } else {
-            textColor = AppColors.textSecondary;
-          }
-
-          return Expanded(
-            child: Center(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
   Widget _buildCalendarGrid(List<DateTime> days, List<Event> events) {
     // 將日期分成 6 週，但過濾掉完全不屬於當前月份的週
     final allWeeks = <List<DateTime>>[];
@@ -119,17 +66,17 @@ class MonthCalendar extends StatelessWidget {
     }).toList();
 
     // 計算動態高度
-    // 基準：5週的高度約為 420 (84 * 5)
-    // 84 = 30 (Date) + 54 (3 rows * 18)
-    const targetTotalHeight = 470.0;
+    // 使用 centralized layout constants
+    final targetTotalHeight = CalendarLayout.monthGridTargetHeight;
     final cellHeight = targetTotalHeight / visibleWeeks.length;
 
     // 計算動態最大事件行數
-    // cellHeight = 30 (base) + events
-    // events space = cellHeight - 30
-    // row height = 20 (18 bar + 2 spacing)
-    final availableEventSpace = cellHeight - 34.0;
-    final maxEventRows = (availableEventSpace / 20.0).floor();
+    // cellHeight = dayLabelHeight + events
+    final availableEventSpace = cellHeight - CalendarLayout.dayLabelHeight;
+    final maxEventRows =
+        (availableEventSpace /
+                (CalendarLayout.eventRowHeight + CalendarLayout.eventSpacing))
+            .floor();
 
     // 構建帶有分隔線的週列表
     final children = <Widget>[];
@@ -160,9 +107,9 @@ class MonthCalendar extends StatelessWidget {
     // 計算並佈局這一週的事件
     final layoutEvents = _layoutEventsForWeek(week, allEvents);
 
-    const baseCellHeight = 34.0;
-    const eventRowHeight = 18.0;
-    const eventSpacing = 2.0;
+    const baseCellHeight = CalendarLayout.dayLabelHeight;
+    const eventRowHeight = CalendarLayout.eventRowHeight;
+    const eventSpacing = CalendarLayout.eventSpacing;
 
     return SizedBox(
       height: cellHeight,
@@ -347,16 +294,7 @@ class MonthCalendar extends StatelessWidget {
                   ? const Radius.circular(4)
                   : Radius.zero,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors
-                    .eventColors[data.event.colorIndex %
-                        AppColors.eventColors.length]
-                    .withValues(alpha: 0.3),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
-              ),
-            ],
+            // BoxShadow removed for performance optimization during swiping
           ),
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(

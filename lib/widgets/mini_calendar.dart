@@ -117,7 +117,11 @@ class _MiniCalendarState extends State<MiniCalendar> {
               allowImplicitScrolling: true,
               onPageChanged: (index) {
                 final newMonth = _calculateDateFromIndex(index);
-                widget.onMonthChanged?.call(newMonth);
+                // Prevent loop: Only notify if the month implies a change from the current widget state
+                if (newMonth.year != widget.currentMonth.year ||
+                    newMonth.month != widget.currentMonth.month) {
+                  widget.onMonthChanged?.call(newMonth);
+                }
               },
               itemBuilder: (context, index) {
                 final monthDate = _calculateDateFromIndex(index);

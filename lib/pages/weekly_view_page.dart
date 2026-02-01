@@ -33,9 +33,12 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<EventProvider>();
-    // 我們使用 selectedDate 來決定要顯示哪一週
-    final selectedDate = provider.selectedDate;
+    // Only rebuild if selectedDate or events list changes
+    final selectedDate = context.select<EventProvider, DateTime>(
+      (p) => p.selectedDate,
+    );
+    // Access provider for methods (read is fine since we select what we need)
+    final provider = context.read<EventProvider>();
 
     // 計算該週的每一天 (假設週一為第一天)
     final daysOfWeek = _getDaysInWeek(selectedDate);

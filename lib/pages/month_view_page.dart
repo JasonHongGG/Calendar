@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/calendar_layout.dart';
 
 import '../widgets/gradient_header.dart';
 import '../widgets/month_calendar.dart';
@@ -99,43 +100,73 @@ class _MonthViewPageState extends State<MonthViewPage> {
                 },
               ),
             ),
-            const SizedBox(height: 0),
-            // PageView Calendar
-            Expanded(
-              child: PageView.builder(
-                allowImplicitScrolling: true, // Pre-cache pages to prevent jank
-                controller: _pageController,
-                onPageChanged: (index) {
-                  final provider = context.read<EventProvider>();
-                  final newMonth = _calculateDateFromIndex(index);
-                  if (newMonth.year != provider.currentMonth.year ||
-                      newMonth.month != provider.currentMonth.month) {
-                    provider.setCurrentMonth(newMonth);
-                  }
-                },
-                itemBuilder: (context, index) {
-                  final monthDate = _calculateDateFromIndex(index);
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: [
-                        MonthCalendar(
-                          currentMonth: monthDate,
-                          onEventTap: (event) {
-                            showAddEventSheet(
-                              context,
-                              editEvent: event,
-                              initialDate: event.startDate,
-                            );
-                          },
-                        ),
-                        const Spacer(),
-                      ],
+            const SizedBox(height: 16),
+
+            const SizedBox(height: 16),
+
+            // Static Calendar Background & Header
+            // The PageView will slide strictly inside this container
+            Container(
+              height: CalendarLayout
+                  .monthContainerHeight, // Use centralized constant
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Static Weekday Header (Doesn't move)
+                  _buildWeekdayHeader(),
+                  const Divider(height: 1),
+
+                  // Sliding Date Grid
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      allowImplicitScrolling: true,
+                      onPageChanged: (index) {
+                        final provider = context.read<EventProvider>();
+                        final newMonth = _calculateDateFromIndex(index);
+                        if (newMonth.year != provider.currentMonth.year ||
+                            newMonth.month != provider.currentMonth.month) {
+                          provider.setCurrentMonth(newMonth);
+                        }
+                      },
+                      itemBuilder: (context, index) {
+                        final monthDate = _calculateDateFromIndex(index);
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              MonthCalendar(
+                                currentMonth: monthDate,
+                                onEventTap: (event) {
+                                  showAddEventSheet(
+                                    context,
+                                    editEvent: event,
+                                    initialDate: event.startDate,
+                                  );
+                                },
+                              ),
+                              const Spacer(),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
+            // Bottom spacing (if needed, or consumed by Expanded margin)
           ],
         ),
       ),
@@ -145,6 +176,45 @@ class _MonthViewPageState extends State<MonthViewPage> {
         builder: (context, selectedDate, child) {
           return _buildFAB(context, selectedDate);
         },
+      ),
+    );
+  }
+
+  Widget _buildWeekdayHeader() {
+    // Import CalendarDateUtils at top if missing, but it should be available via date_utils.dart
+    // Assuming CalendarDateUtils is imported or we can add import.
+    // If not imported previously, I should check.
+    // MonthViewPage.dart imports:
+    // import '../utils/date_utils.dart'; (Removed in step 5 edit? No, step 5 removed it. I MUST RE-ADD IT)
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: ['日', '一', '二', '三', '四', '五', '六'].map((label) {
+          final isSunday = label == '日';
+          final isSaturday = label == '六';
+          Color textColor;
+          if (isSunday) {
+            textColor = AppColors.textSunday;
+          } else if (isSaturday) {
+            textColor = AppColors.textSaturday;
+          } else {
+            textColor = AppColors.textSecondary;
+          }
+
+          return Expanded(
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

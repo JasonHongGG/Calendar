@@ -29,51 +29,77 @@ class _SchedulePageState extends State<SchedulePage> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<EventProvider>();
-    final currentMonth = provider.currentMonth;
-    final selectedDate = provider.selectedDate;
-
-    // 取得從選中日期開始的事件列表
-    final groupedEvents = _getGroupedEvents(provider);
-
+    // Top-level: No watch
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
             const SizedBox(height: 16),
-
-            // 迷你月曆
+            // 迷你月曆 (Only rebuilds when currentMonth or selectedDate changes)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: MiniCalendar(
-                currentMonth: currentMonth,
-                selectedDate: selectedDate,
-                onDateSelected: (date) {
-                  provider.setSelectedDate(date);
-                  // 如果選擇的日期不在當前月份，切換到該月份
-                  if (!CalendarDateUtils.isInMonth(date, currentMonth)) {
-                    provider.setCurrentMonth(date);
-                  }
-                },
-                onMonthChanged: (month) {
-                  provider.setCurrentMonth(month);
+              child: Selector<EventProvider, (DateTime, DateTime)>(
+                selector: (context, provider) =>
+                    (provider.currentMonth, provider.selectedDate),
+                builder: (context, data, child) {
+                  final currentMonth = data.$1;
+                  final selectedDate = data.$2;
+                  final provider = context.read<EventProvider>();
+
+                  return MiniCalendar(
+                    currentMonth: currentMonth,
+                    selectedDate: selectedDate,
+                    onDateSelected: (date) {
+                      provider.setSelectedDate(date);
+                      // 如果選擇的日期不在當前月份，切換到該月份
+                      if (!CalendarDateUtils.isInMonth(date, currentMonth)) {
+                        provider.setCurrentMonth(date);
+                      }
+                    },
+                    onMonthChanged: (month) {
+                      provider.setCurrentMonth(month);
+                    },
+                  );
                 },
               ),
             ),
             const SizedBox(height: 16),
             // 分隔線
             Container(height: 6, color: AppColors.dividerLight),
-            // 事件列表
+            // 事件列表 (Only rebuilds when selectedDate or events list changes)
             Expanded(
-              child: groupedEvents.isEmpty
-                  ? _buildEmptyState()
-                  : _buildEventsList(groupedEvents),
+              child: Selector<EventProvider, (DateTime, List<Event>)>(
+                selector: (context, provider) =>
+                    (provider.selectedDate, provider.events),
+                shouldRebuild: (prev, next) {
+                  // Rebuild only if selectedDate changed or events list reference changed
+                  // (assuming immutable list or provider notifies on list change)
+                  return prev.$1 != next.$1 || prev.$2 != next.$2;
+                },
+                builder: (context, data, child) {
+                  // final selectedDate = data.$1; // Unused
+                  // final allEvents = data.$2; // Unused, but selector triggers rebuild
+                  // final allEvents = data.$2; // Not used directly, but triggers rebuild
+                  // Access provider for helper methods
+                  final provider = context.read<EventProvider>();
+                  final groupedEvents = _getGroupedEvents(provider);
+
+                  return groupedEvents.isEmpty
+                      ? _buildEmptyState()
+                      : _buildEventsList(groupedEvents);
+                },
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: _buildFAB(context, selectedDate),
+      // FAB (Selector for selectedDate)
+      floatingActionButton: Selector<EventProvider, DateTime>(
+        selector: (context, p) => p.selectedDate,
+        builder: (context, selectedDate, child) =>
+            _buildFAB(context, selectedDate),
+      ),
     );
   }
 
