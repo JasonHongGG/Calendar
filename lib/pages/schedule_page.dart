@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../models/event.dart';
 import '../providers/event_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
+import '../theme/app_text_styles.dart';
 import '../utils/date_utils.dart';
 import '../widgets/mini_calendar.dart';
 import '../widgets/event_card.dart';
@@ -35,10 +37,11 @@ class _SchedulePageState extends State<SchedulePage> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 0),
             // 迷你月曆 (Only rebuilds when currentMonth or selectedDate changes)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.spacingNormal,
+              ),
               child: Selector<EventProvider, (DateTime, DateTime)>(
                 selector: (context, provider) =>
                     (provider.currentMonth, provider.selectedDate),
@@ -64,7 +67,6 @@ class _SchedulePageState extends State<SchedulePage> {
                 },
               ),
             ),
-            const SizedBox(height: 0),
             // 分隔線
             Container(height: 6, color: AppColors.dividerLight),
             // 事件列表 (Only rebuilds when selectedDate or events list changes)
@@ -85,9 +87,7 @@ class _SchedulePageState extends State<SchedulePage> {
                   final provider = context.read<EventProvider>();
                   final groupedEvents = _getGroupedEvents(provider);
 
-                  return groupedEvents.isEmpty
-                      ? _buildEmptyState()
-                      : _buildEventsList(groupedEvents);
+                  return _buildEventsList(groupedEvents);
                 },
               ),
             ),
@@ -114,49 +114,18 @@ class _SchedulePageState extends State<SchedulePage> {
     return grouped;
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.gradientStart.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.event_available_rounded,
-              size: 48,
-              color: AppColors.gradientStart.withValues(alpha: 0.6),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            '目前沒有安排',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '點擊右下角 + 按鈕新增事件',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildEventsList(Map<DateTime, List<Event>> groupedEvents) {
     final entries = groupedEvents.entries.toList();
 
     return AnimationLimiter(
       child: ListView.builder(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        padding: const EdgeInsets.fromLTRB(
+          AppDimens.spacingNormal,
+          AppDimens.spacingNormal,
+          AppDimens.spacingNormal,
+          100, // Bottom padding for FAB
+        ),
         itemCount: entries.length,
         itemBuilder: (context, index) {
           final entry = entries[index];
@@ -184,14 +153,14 @@ class _SchedulePageState extends State<SchedulePage> {
       children: [
         // 日期標題
         _buildDateHeader(date, isToday),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppDimens.spacingNormal),
         // 事件列表
         if (events.isEmpty)
           _buildEmptyDateMessage(date)
         else
           ...events.map((event) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: AppDimens.spacingNormal),
               child: EventCard(
                 event: event,
                 onTap: () => showAddEventSheet(context, editEvent: event),
@@ -208,35 +177,17 @@ class _SchedulePageState extends State<SchedulePage> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         // 大大的日期數字
-        Text(
-          '${date.day}',
-          style: const TextStyle(
-            fontSize: 48,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-            height: 1.0,
-            letterSpacing: -2,
-          ),
-        ),
-        const SizedBox(width: 12),
+        Text('${date.day}', style: AppTextStyles.headerLarge),
+        const SizedBox(width: AppDimens.spacingMedium),
         // 月份與星期
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${date.month}月',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-                height: 1.0,
-              ),
-            ),
-            const SizedBox(height: 4),
+            Text('${date.month}月', style: AppTextStyles.headerMedium),
+            const SizedBox(height: AppDimens.spacingTiny),
             Text(
               CalendarDateUtils.formatWeekday(date),
-              style: const TextStyle(
-                fontSize: 14,
+              style: AppTextStyles.bodyNormal.copyWith(
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondary,
               ),
@@ -250,7 +201,7 @@ class _SchedulePageState extends State<SchedulePage> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppDimens.radiusXLarge),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.gradientStart.withValues(alpha: 0.3),
@@ -277,10 +228,10 @@ class _SchedulePageState extends State<SchedulePage> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppDimens.spacingNormal),
         decoration: BoxDecoration(
           color: AppColors.background,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimens.radiusMedium),
           border: Border.all(
             color: AppColors.dividerLight,
             style: BorderStyle.solid,
@@ -291,12 +242,14 @@ class _SchedulePageState extends State<SchedulePage> {
             Icon(
               Icons.add_circle_outline_rounded,
               color: AppColors.textTertiary,
-              size: 20,
+              size: AppDimens.iconMedium,
             ),
             const SizedBox(width: 10),
-            const Text(
+            Text(
               '尚未規劃活動，點擊 + 新增事件',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: AppTextStyles.bodyNormal.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),

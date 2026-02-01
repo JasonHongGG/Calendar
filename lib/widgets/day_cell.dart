@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
+import '../theme/app_text_styles.dart';
 import '../utils/date_utils.dart';
 import '../utils/lunar_utils.dart';
 
@@ -39,21 +41,28 @@ class DayCell extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: EdgeInsets.all(isCompact ? 1 : 1),
+        margin: const EdgeInsets.all(1),
         decoration: BoxDecoration(
           border: isSelected
-              ? Border.all(color: AppColors.textSecondary, width: 1.5)
+              ? Border.all(
+                  color: AppColors.textSecondary,
+                  width: AppDimens.selectionBorderWidth,
+                )
               : null,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppDimens.radiusMedium),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start, // 置頂對齊
           children: [
-            const SizedBox(height: 0), // 頂部間距 (縮小 2 -> 0) 以容納更大數字
+            const SizedBox(height: 0), // 頂部間距
             // 日期數字 (含背景圓圈)
             Container(
-              width: isCompact ? 28 : 28, // 圓圈 (22 -> 28), compact 模式也變大
-              height: isCompact ? 28 : 28,
+              width: isCompact
+                  ? AppDimens.dayCellSizeCompact
+                  : AppDimens.dayCellSize,
+              height: isCompact
+                  ? AppDimens.dayCellSizeCompact
+                  : AppDimens.dayCellSize,
               decoration: BoxDecoration(
                 gradient: null, // 移除原本的漸層，改成純色
                 color: isToday
@@ -61,7 +70,10 @@ class DayCell extends StatelessWidget {
                     : null, // 移除選中時的背景色
                 shape: BoxShape.rectangle,
                 borderRadius: BorderRadius.circular(
-                  (isCompact ? 28.0 : 28.0) * 0.4,
+                  (isCompact
+                          ? AppDimens.dayCellSizeCompact
+                          : AppDimens.dayCellSize) *
+                      0.4,
                 ), // 圓角約為寬度的 40%
                 boxShadow: isToday
                     ? [
@@ -76,14 +88,16 @@ class DayCell extends StatelessWidget {
               child: Center(
                 child: Text(
                   '${date.day}',
-                  style: TextStyle(
-                    fontSize: isCompact ? 16 : 18, // 數字放大 (12 -> 16)
-                    fontWeight: isToday || isSelected
-                        ? FontWeight.w700
-                        : FontWeight.w500,
-                    color: _getTextColorWithinCircle(),
-                    height: 1.0, // 緊湊行高
-                  ),
+                  style:
+                      (isCompact
+                              ? AppTextStyles.dayNumberCompact
+                              : AppTextStyles.dayNumber)
+                          .copyWith(
+                            fontWeight: isToday || isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: _getTextColorWithinCircle(),
+                          ),
                 ),
               ),
             ),
@@ -91,19 +105,14 @@ class DayCell extends StatelessWidget {
             if (!isCompact && _isInMonth) ...[
               Text(
                 LunarUtils.getLunarText(date),
-                style: TextStyle(
-                  fontSize: 9, // 農曆字體 (10 -> 9)
-                  color: AppColors.textTertiary,
-                  fontWeight: FontWeight.w400,
-                  height: 1.1,
-                ),
+                style: AppTextStyles.lunarDate,
                 maxLines: 1,
                 overflow: TextOverflow.visible,
               ),
             ],
             // 事件指示點 (僅在 compact 模式顯示)
             if (eventColors.isNotEmpty && isCompact) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: AppDimens.spacingTiny / 2),
               _buildCompactEventDots(),
             ],
           ],
@@ -114,7 +123,7 @@ class DayCell extends StatelessWidget {
 
   Color _getTextColorWithinCircle() {
     if (isToday) {
-      return Colors.white;
+      return Colors.white; // Or AppColors.textOnTheme
     }
     // 普通狀態
     if (!_isInMonth) {

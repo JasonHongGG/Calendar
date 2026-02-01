@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
+import '../theme/app_text_styles.dart';
 import '../theme/calendar_layout.dart';
 import '../utils/date_utils.dart';
-
 import '../widgets/gradient_header.dart';
 import '../widgets/month_calendar.dart';
-
 import '../widgets/add_event_sheet.dart';
 import '../widgets/day_detail_sheet.dart';
 
@@ -38,9 +38,6 @@ class _MonthViewPageState extends State<MonthViewPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Sync controller if provider changed externally (e.g. "Today" action elsewhere)
-    // Note: This might trigger during component build, so be careful.
-    // Ideally, we listen to the provider in a way that doesn't conflict with onPageChanged.
-    // But since onPageChanged drives the provider, this check prevents loops if logic is correct.
     final provider = context.read<EventProvider>();
     final currentIndex = _calculateIndex(provider.currentMonth);
     if (_pageController.hasClients &&
@@ -65,18 +62,17 @@ class _MonthViewPageState extends State<MonthViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Avoid watching at the top level to prevent PageView rebuilds
-    // final provider = context.watch<EventProvider>();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 8),
+            const SizedBox(height: AppDimens.spacingSmall),
             // Header: Only this part needs to rebuild when month changes
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.spacingNormal,
+              ),
               child: Consumer<EventProvider>(
                 builder: (context, provider, child) {
                   final currentMonth = provider.currentMonth;
@@ -108,10 +104,12 @@ class _MonthViewPageState extends State<MonthViewPage> {
             Container(
               height: CalendarLayout
                   .monthContainerHeight, // Use centralized constant
-              margin: const EdgeInsets.symmetric(horizontal: 16),
+              margin: const EdgeInsets.symmetric(
+                horizontal: AppDimens.spacingNormal,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppDimens.radiusXLarge),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.shadow.withValues(alpha: 0.08),
@@ -171,8 +169,6 @@ class _MonthViewPageState extends State<MonthViewPage> {
                                       }
                                     },
                                     onEventTap: (event) {
-                                      // Event taps are now disabled in MonthCalendar (IgnorePointer),
-                                      // but keeping this callback just in case logic changes back.
                                       showAddEventSheet(
                                         context,
                                         editEvent: event,
@@ -192,7 +188,7 @@ class _MonthViewPageState extends State<MonthViewPage> {
                 ],
               ),
             ),
-            // Bottom spacing (if needed, or consumed by Expanded margin)
+            // Bottom spacing
           ],
         ),
       ),
@@ -207,14 +203,8 @@ class _MonthViewPageState extends State<MonthViewPage> {
   }
 
   Widget _buildWeekdayHeader() {
-    // Import CalendarDateUtils at top if missing, but it should be available via date_utils.dart
-    // Assuming CalendarDateUtils is imported or we can add import.
-    // If not imported previously, I should check.
-    // MonthViewPage.dart imports:
-    // import '../utils/date_utils.dart'; (Removed in step 5 edit? No, step 5 removed it. I MUST RE-ADD IT)
-
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppDimens.spacingSmall),
       child: Row(
         children: ['日', '一', '二', '三', '四', '五', '六'].map((label) {
           final isSunday = label == '日';
@@ -232,11 +222,7 @@ class _MonthViewPageState extends State<MonthViewPage> {
             child: Center(
               child: Text(
                 label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
+                style: AppTextStyles.weekdayLabel.copyWith(color: textColor),
               ),
             ),
           );

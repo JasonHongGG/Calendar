@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_dimens.dart';
+import '../theme/app_text_styles.dart';
 import '../utils/date_utils.dart';
 import 'day_cell.dart';
 
@@ -85,7 +87,9 @@ class _MiniCalendarState extends State<MiniCalendar> {
         children: [
           // 月份標題 (使用新的 CalendarHeader)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.spacingSmall,
+            ),
             child: CalendarHeader(
               title:
                   '${widget.currentMonth.year}/${widget.currentMonth.month.toString().padLeft(2, '0')}',
@@ -105,13 +109,18 @@ class _MiniCalendarState extends State<MiniCalendar> {
               onSettings: null,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppDimens.spacingSmall),
           // 星期標題
           _buildWeekdayHeader(),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppDimens.spacingTiny),
           // 可滑動的日曆網格
           SizedBox(
-            height: 250, // Fixed height for 6 rows (40*6 + margin)
+            height:
+                250, // Fixed height for 6 rows (40*6 + margin) - Keeping as valid functional constant for now or move to CalendarLayout?
+            // Let's leave 250 here or logically calculated.
+            // 6 rows * 40ish = 240.
+            // Check Row height in _buildCalendarGrid: height: 40.
+            // 6 * 40 = 240.
             child: PageView.builder(
               controller: _pageController,
               allowImplicitScrolling: true,
@@ -129,7 +138,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
               },
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppDimens.spacingSmall),
         ],
       ),
     );
@@ -147,7 +156,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
 
   Widget _buildWeekdayHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppDimens.spacingSmall),
       child: Row(
         children: CalendarDateUtils.weekdayLabels.map((label) {
           final isSunday = label == '日';
@@ -165,8 +174,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
             child: Center(
               child: Text(
                 label,
-                style: TextStyle(
-                  fontSize: 11,
+                style: AppTextStyles.captionSmall.copyWith(
                   fontWeight: FontWeight.w600,
                   color: textColor,
                 ),
@@ -195,11 +203,11 @@ class _MiniCalendarState extends State<MiniCalendar> {
     final displayWeeks = weeks.take(weeksNeeded).toList();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppDimens.spacingSmall),
       child: Column(
         children: displayWeeks.map((week) {
           return SizedBox(
-            height: 40,
+            height: 40, // Height per row
             child: Row(
               children: week.map((date) {
                 final eventColors = provider.getEventColorsForDate(date);
