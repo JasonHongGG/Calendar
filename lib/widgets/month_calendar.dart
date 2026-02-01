@@ -124,16 +124,15 @@ class MonthCalendar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: week.map((date) {
               final isToday = CalendarDateUtils.isToday(date);
-              final isSelected =
-                  selectedDate != null &&
-                  CalendarDateUtils.isSameDay(date, selectedDate!);
+              // 移除底層 DayCell 的選中狀態，改由最上層覆蓋繪製
+              // final isSelected = ...
 
               return Expanded(
                 child: DayCell(
                   date: date,
                   currentMonth: currentMonth,
                   isToday: isToday,
-                  isSelected: isSelected,
+                  isSelected: false, // 永遠不選中，由 Overlay 處理
                   eventColors: const [],
                   onTap: () => onDateSelected?.call(date),
                 ),
@@ -158,6 +157,33 @@ class MonthCalendar extends StatelessWidget {
                 );
               },
             ),
+          ),
+          // 選中框覆蓋層 (最上層，確保不被事件遮擋)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: week.map((date) {
+              final isSelected =
+                  selectedDate != null &&
+                  CalendarDateUtils.isSameDay(date, selectedDate!);
+
+              if (!isSelected) return const Expanded(child: SizedBox());
+
+              return Expanded(
+                child: Container(
+                  margin: const EdgeInsets.all(
+                    1,
+                  ), // Match DayCell margin (1 for compact)
+                  // Note: DayCell code says: margin: EdgeInsets.all(isCompact ? 1 : 1),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: AppColors.textSecondary,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -282,8 +308,7 @@ class MonthCalendar extends StatelessWidget {
       bool forceStart,
       bool forceEnd,
     ) {
-      return GestureDetector(
-        onTap: () => onEventTap?.call(data.event),
+      return IgnorePointer(
         child: Container(
           alignment: Alignment.centerLeft,
           decoration: BoxDecoration(

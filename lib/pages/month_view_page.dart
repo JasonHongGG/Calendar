@@ -143,13 +143,25 @@ class _MonthViewPageState extends State<MonthViewPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
                             children: [
-                              MonthCalendar(
-                                currentMonth: monthDate,
-                                onEventTap: (event) {
-                                  showAddEventSheet(
-                                    context,
-                                    editEvent: event,
-                                    initialDate: event.startDate,
+                              Selector<EventProvider, DateTime>(
+                                selector: (context, provider) =>
+                                    provider.selectedDate,
+                                builder: (context, selectedDate, child) {
+                                  return MonthCalendar(
+                                    currentMonth: monthDate,
+                                    selectedDate: selectedDate,
+                                    onDateSelected: (date) {
+                                      context
+                                          .read<EventProvider>()
+                                          .setSelectedDate(date);
+                                    },
+                                    onEventTap: (event) {
+                                      showAddEventSheet(
+                                        context,
+                                        editEvent: event,
+                                        initialDate: event.startDate,
+                                      );
+                                    },
                                   );
                                 },
                               ),

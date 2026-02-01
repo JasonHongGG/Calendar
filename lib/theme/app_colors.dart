@@ -24,7 +24,7 @@ class AppColors {
 
   // 文字色彩
   static const Color textPrimary = Color(0xFF1E293B);
-  static const Color textSecondary = Color(0xFF64748B);
+  static const Color textSecondary = Color.fromARGB(255, 212, 215, 220);
   static const Color textTertiary = Color(0xFF94A3B8);
   static const Color textOnGradient = Color(0xFFFFFFFF);
   static const Color textSunday = Color(0xFFEF4444); // 紅色

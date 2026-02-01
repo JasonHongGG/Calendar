@@ -40,10 +40,10 @@ class DayCell extends StatelessWidget {
       child: Container(
         margin: EdgeInsets.all(isCompact ? 1 : 1),
         decoration: BoxDecoration(
-          color: isSelected && !isToday
-              ? AppColors.cardBackground
-              : null, // 移除選中時的整個格子背景
-          borderRadius: BorderRadius.circular(0), // 移除圓角
+          border: isSelected
+              ? Border.all(color: AppColors.textSecondary, width: 2)
+              : null,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start, // 置頂對齊
@@ -57,20 +57,15 @@ class DayCell extends StatelessWidget {
                 gradient: null, // 移除原本的漸層，改成純色
                 color: isToday
                     ? _dayColor // 今天：背景為該日代表色 (紅/藍/黑)
-                    : (isSelected
-                          ? AppColors.gradientStart.withValues(
-                              alpha: 0.8,
-                            ) // 選中：深色背景
-                          : null),
+                    : null, // 移除選中時的背景色
                 shape: BoxShape.rectangle,
                 borderRadius: BorderRadius.circular(
                   (isCompact ? 22.0 : 26.0) * 0.4,
                 ), // 圓角約為寬度的 40%
-                boxShadow: (isToday || isSelected)
+                boxShadow: isToday
                     ? [
                         BoxShadow(
-                          color: (isToday ? _dayColor : AppColors.gradientStart)
-                              .withValues(alpha: 0.3),
+                          color: _dayColor.withValues(alpha: 0.3),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -105,18 +100,11 @@ class DayCell extends StatelessWidget {
     if (isToday) {
       return Colors.white;
     }
-    if (isSelected) {
-      return Colors.white;
-    }
     // 普通狀態
     if (!_isInMonth) {
       return AppColors.textTertiary.withValues(alpha: 0.5);
     }
-    // 今天和選中狀態文字白色
-    if (isToday || isSelected) {
-      return Colors.white;
-    }
-    // 其他狀態顯示該日代表色
+    // 其他顯示該日代表色
     return _dayColor;
   }
 
