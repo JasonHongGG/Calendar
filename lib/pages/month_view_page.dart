@@ -100,9 +100,6 @@ class _MonthViewPageState extends State<MonthViewPage> {
                 },
               ),
             ),
-            const SizedBox(height: 16),
-
-            const SizedBox(height: 16),
 
             // Static Calendar Background & Header
             // The PageView will slide strictly inside this container
