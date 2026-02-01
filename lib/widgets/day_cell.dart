@@ -49,11 +49,11 @@ class DayCell extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start, // 置頂對齊
           children: [
-            const SizedBox(height: 2), // 頂部間距 (縮小 4 -> 2)
+            const SizedBox(height: 0), // 頂部間距 (縮小 2 -> 0) 以容納更大數字
             // 日期數字 (含背景圓圈)
             Container(
-              width: isCompact ? 20 : 22, // 縮小圓圈 (22/26 -> 20/22)
-              height: isCompact ? 20 : 22,
+              width: isCompact ? 28 : 28, // 圓圈 (22 -> 28), compact 模式也變大
+              height: isCompact ? 28 : 28,
               decoration: BoxDecoration(
                 gradient: null, // 移除原本的漸層，改成純色
                 color: isToday
@@ -61,7 +61,7 @@ class DayCell extends StatelessWidget {
                     : null, // 移除選中時的背景色
                 shape: BoxShape.rectangle,
                 borderRadius: BorderRadius.circular(
-                  (isCompact ? 20.0 : 22.0) * 0.4,
+                  (isCompact ? 28.0 : 28.0) * 0.4,
                 ), // 圓角約為寬度的 40%
                 boxShadow: isToday
                     ? [
@@ -77,11 +77,12 @@ class DayCell extends StatelessWidget {
                 child: Text(
                   '${date.day}',
                   style: TextStyle(
-                    fontSize: isCompact ? 10 : 12, // 數字縮小 (12/14 -> 10/12)
+                    fontSize: isCompact ? 16 : 18, // 數字放大 (12 -> 16)
                     fontWeight: isToday || isSelected
                         ? FontWeight.w700
                         : FontWeight.w500,
                     color: _getTextColorWithinCircle(),
+                    height: 1.0, // 緊湊行高
                   ),
                 ),
               ),

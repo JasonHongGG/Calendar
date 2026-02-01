@@ -12,7 +12,7 @@ class CalendarLayout {
       monthContainerHeight - weekdayHeaderHeight - 8.0;
 
   // Event Layout
-  static const double dayLabelHeight = 38.0;
-  static const double eventRowHeight = 18.0;
+  static const double dayLabelHeight = 40.0;
+  static const double eventRowHeight = 17.0;
   static const double eventSpacing = 1.0;
 }

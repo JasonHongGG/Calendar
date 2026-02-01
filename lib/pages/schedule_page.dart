@@ -35,7 +35,7 @@ class _SchedulePageState extends State<SchedulePage> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 16),
+            const SizedBox(height: 0),
             // 迷你月曆 (Only rebuilds when currentMonth or selectedDate changes)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -64,7 +64,7 @@ class _SchedulePageState extends State<SchedulePage> {
                 },
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 0),
             // 分隔線
             Container(height: 6, color: AppColors.dividerLight),
             // 事件列表 (Only rebuilds when selectedDate or events list changes)
