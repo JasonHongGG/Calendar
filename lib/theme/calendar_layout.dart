@@ -4,7 +4,7 @@ class CalendarLayout {
 
   // Internal dimensions
   // Estimated height for the weekday header (vertical padding 12*2 + text ~18)
-  static const double weekdayHeaderHeight = 48.0;
+  static const double weekdayHeaderHeight = 36.0;
 
   // The available height for the grid.
   // We leave some buffer for divider (1px) and padding.

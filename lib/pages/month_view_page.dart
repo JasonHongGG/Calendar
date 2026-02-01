@@ -185,7 +185,7 @@ class _MonthViewPageState extends State<MonthViewPage> {
     // import '../utils/date_utils.dart'; (Removed in step 5 edit? No, step 5 removed it. I MUST RE-ADD IT)
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: ['日', '一', '二', '三', '四', '五', '六'].map((label) {
           final isSunday = label == '日';

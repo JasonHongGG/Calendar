@@ -68,7 +68,11 @@ class MonthCalendar extends StatelessWidget {
     // 計算動態高度
     // 使用 centralized layout constants
     final targetTotalHeight = CalendarLayout.monthGridTargetHeight;
-    final cellHeight = targetTotalHeight / visibleWeeks.length;
+    // 減去分隔線的高度 (每週之間有一條線，共 visibleWeeks.length - 1 條)
+    // 確保總高度 (Cells + Dividers) 準確等於 targetTotalHeight
+    final totalDividerHeight = (visibleWeeks.length - 1) * 1.0;
+    final cellHeight =
+        (targetTotalHeight - totalDividerHeight) / visibleWeeks.length;
 
     // 計算動態最大事件行數
     // cellHeight = dayLabelHeight + events

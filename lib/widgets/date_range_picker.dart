@@ -57,25 +57,27 @@ class _DateRangePickerState extends State<DateRangePicker> {
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 月份導航
-          _buildMonthHeader(),
-          const SizedBox(height: 8),
-          // 選擇提示
-          _buildSelectionHint(),
-          const SizedBox(height: 12),
-          // 星期標題
-          _buildWeekdayHeader(),
-          const SizedBox(height: 8),
-          // 日曆網格
-          _buildCalendarGrid(displayDays),
-          const SizedBox(height: 16),
-          // 已選範圍顯示
-          _buildSelectedRangeDisplay(),
-          const SizedBox(height: 12),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 月份導航
+            _buildMonthHeader(),
+            const SizedBox(height: 8),
+            // 選擇提示
+            _buildSelectionHint(),
+            const SizedBox(height: 12),
+            // 星期標題
+            _buildWeekdayHeader(),
+            const SizedBox(height: 8),
+            // 日曆網格
+            _buildCalendarGrid(displayDays),
+            const SizedBox(height: 16),
+            // 已選範圍顯示
+            _buildSelectedRangeDisplay(),
+            const SizedBox(height: 12),
+          ],
+        ),
       ),
     );
   }
@@ -567,26 +569,26 @@ Future<DateTimeRange?> showDateRangePickerDialog(
 }) async {
   DateTimeRange? result;
 
+  // Dismiss keyboard to clear view and providing more space
+  FocusScope.of(context).unfocus();
+
   await showDialog(
     context: context,
     barrierDismissible: true,
     builder: (context) => Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DateRangePicker(
-            initialStartDate: initialStartDate,
-            initialEndDate: initialEndDate,
-            onDateRangeSelected: (start, end) {
-              result = DateTimeRange(start: start, end: end);
-            },
-            onConfirm: () {
-              Navigator.pop(context);
-            },
-          ),
-        ],
+      // Remove Column wrapper to allow DateRangePicker to respect Dialog's constraints
+      // enabling the internal SingleChildScrollView to work.
+      child: DateRangePicker(
+        initialStartDate: initialStartDate,
+        initialEndDate: initialEndDate,
+        onDateRangeSelected: (start, end) {
+          result = DateTimeRange(start: start, end: end);
+        },
+        onConfirm: () {
+          Navigator.pop(context);
+        },
       ),
     ),
   );
