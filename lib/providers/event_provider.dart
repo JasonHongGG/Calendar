@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/event.dart';
 import '../utils/date_utils.dart';
+import '../services/notification_service.dart';
 
 /// 事件狀態管理器
 class EventProvider extends ChangeNotifier {
@@ -80,6 +81,7 @@ class EventProvider extends ChangeNotifier {
     int colorIndex = 0,
     String? location,
     String? description,
+    DateTime? reminderTime,
   }) async {
     final event = Event(
       id: _uuid.v4(),
@@ -90,20 +92,53 @@ class EventProvider extends ChangeNotifier {
       colorIndex: colorIndex,
       location: location,
       description: description,
+      reminderTime: reminderTime,
     );
 
     await _eventsBox?.put(event.id, event);
+
+    if (reminderTime != null) {
+      // Use hashCode as notification ID (simple way)
+      // Note: UUID hashcode might not be unique enough for int32 limit, but acceptable for this scale
+      await NotificationService().scheduleNotification(
+        id: event.id.hashCode,
+        title: '行事曆提醒: $title',
+        body: CalendarDateUtils.formatEventTime(startDate, endDate, isAllDay),
+        scheduledDate: reminderTime,
+      );
+    }
     _loadEvents();
   }
 
   /// 更新事件
   Future<void> updateEvent(Event event) async {
     await _eventsBox?.put(event.id, event);
+
+    // Cancel existing notification first (just in case)
+    await NotificationService().cancelNotification(event.id.hashCode);
+
+    if (event.reminderTime != null) {
+      await NotificationService().scheduleNotification(
+        id: event.id.hashCode,
+        title: '行事曆提醒: ${event.title}',
+        body: CalendarDateUtils.formatEventTime(
+          event.startDate,
+          event.endDate,
+          event.isAllDay,
+        ),
+        scheduledDate: event.reminderTime!,
+      );
+    }
     _loadEvents();
   }
 
   /// 刪除事件
   Future<void> deleteEvent(String eventId) async {
+    // We need to know the ID hashcode to cancel, assuming string ID is available
+    // In delete, we often have the object. If we only have ID, we need to be careful.
+    // However, string.hashCode is deterministic.
+    await NotificationService().cancelNotification(eventId.hashCode);
+
     await _eventsBox?.delete(eventId);
     _loadEvents();
   }

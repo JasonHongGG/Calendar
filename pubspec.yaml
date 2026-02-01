@@ -17,6 +17,8 @@ dependencies:
   uuid: ^4.3.3
   flutter_staggered_animations: ^1.1.1
   lunar: ^1.7.8
+  flutter_local_notifications: ^20.0.0
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:

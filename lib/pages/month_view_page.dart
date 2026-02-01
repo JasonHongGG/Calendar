@@ -139,48 +139,46 @@ class _MonthViewPageState extends State<MonthViewPage> {
                       },
                       itemBuilder: (context, index) {
                         final monthDate = _calculateDateFromIndex(index);
-                        return Container(
-                          child: Column(
-                            children: [
-                              Selector<EventProvider, DateTime>(
-                                selector: (context, provider) =>
-                                    provider.selectedDate,
-                                builder: (context, selectedDate, child) {
-                                  return MonthCalendar(
-                                    currentMonth: monthDate,
-                                    selectedDate: selectedDate,
-                                    onDateSelected: (date) {
-                                      final provider = context
-                                          .read<EventProvider>();
-                                      // 如果已經選中該日期，則打開詳情頁
-                                      if (CalendarDateUtils.isSameDay(
-                                        date,
-                                        selectedDate,
-                                      )) {
-                                        showDialog(
-                                          context: context,
-                                          barrierColor: Colors.black54,
-                                          builder: (context) =>
-                                              DayDetailSheet(date: date),
-                                        );
-                                      } else {
-                                        // 否則只是切換選中日期
-                                        provider.setSelectedDate(date);
-                                      }
-                                    },
-                                    onEventTap: (event) {
-                                      showAddEventSheet(
-                                        context,
-                                        editEvent: event,
-                                        initialDate: event.startDate,
+                        return Column(
+                          children: [
+                            Selector<EventProvider, DateTime>(
+                              selector: (context, provider) =>
+                                  provider.selectedDate,
+                              builder: (context, selectedDate, child) {
+                                return MonthCalendar(
+                                  currentMonth: monthDate,
+                                  selectedDate: selectedDate,
+                                  onDateSelected: (date) {
+                                    final provider = context
+                                        .read<EventProvider>();
+                                    // 如果已經選中該日期，則打開詳情頁
+                                    if (CalendarDateUtils.isSameDay(
+                                      date,
+                                      selectedDate,
+                                    )) {
+                                      showDialog(
+                                        context: context,
+                                        barrierColor: Colors.black54,
+                                        builder: (context) =>
+                                            DayDetailSheet(date: date),
                                       );
-                                    },
-                                  );
-                                },
-                              ),
-                              const Spacer(),
-                            ],
-                          ),
+                                    } else {
+                                      // 否則只是切換選中日期
+                                      provider.setSelectedDate(date);
+                                    }
+                                  },
+                                  onEventTap: (event) {
+                                    showAddEventSheet(
+                                      context,
+                                      editEvent: event,
+                                      initialDate: event.startDate,
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                            const Spacer(),
+                          ],
                         );
                       },
                     ),

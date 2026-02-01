@@ -120,4 +120,21 @@ class CalendarDateUtils {
   static int compareDates(DateTime a, DateTime b) {
     return dateOnly(a).compareTo(dateOnly(b));
   }
+
+  /// 格式化事件時間（包含日期與時間）
+  static String formatEventTime(DateTime start, DateTime end, bool isAllDay) {
+    if (isAllDay) {
+      if (isSameDay(start, end)) {
+        return '${formatYearMonthDaySlash(start)} 全天';
+      } else {
+        return '${formatYearMonthDaySlash(start)} - ${formatYearMonthDaySlash(end)}';
+      }
+    }
+
+    if (isSameDay(start, end)) {
+      return '${formatYearMonthDaySlash(start)} ${formatTime(start)} - ${formatTime(end)}';
+    } else {
+      return '${formatYearMonthDaySlash(start)} ${formatTime(start)} - ${formatYearMonthDaySlash(end)} ${formatTime(end)}';
+    }
+  }
 }

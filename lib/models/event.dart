@@ -28,6 +28,9 @@ class Event extends HiveObject {
   @HiveField(7)
   String? description;
 
+  @HiveField(8)
+  DateTime? reminderTime;
+
   Event({
     required this.id,
     required this.title,
@@ -37,6 +40,7 @@ class Event extends HiveObject {
     this.colorIndex = 0,
     this.location,
     this.description,
+    this.reminderTime,
   });
 
   /// 檢查事件是否在指定日期
@@ -72,6 +76,7 @@ class Event extends HiveObject {
     int? colorIndex,
     String? location,
     String? description,
+    DateTime? reminderTime,
   }) {
     return Event(
       id: id ?? this.id,
@@ -82,6 +87,7 @@ class Event extends HiveObject {
       colorIndex: colorIndex ?? this.colorIndex,
       location: location ?? this.location,
       description: description ?? this.description,
+      reminderTime: reminderTime ?? this.reminderTime,
     );
   }
 }

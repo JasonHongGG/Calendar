@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'providers/event_provider.dart';
 import 'theme/app_theme.dart';
+import 'services/notification_service.dart';
 import 'pages/home_page.dart';
 
 void main() async {
@@ -21,6 +22,9 @@ void main() async {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
+
+  // 初始化 NotificationService
+  await NotificationService().init();
 
   // 初始化 EventProvider
   final eventProvider = EventProvider();
