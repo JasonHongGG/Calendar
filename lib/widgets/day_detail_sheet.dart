@@ -101,7 +101,7 @@ class DayDetailSheet extends StatelessWidget {
                       ),
                       itemCount: events.length,
                       itemBuilder: (context, index) {
-                        return _buildEventItem(events[index]);
+                        return _buildEventItem(context, events[index]);
                       },
                     ),
             ),
@@ -135,66 +135,83 @@ class DayDetailSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildEventItem(Event event) {
+  Widget _buildEventItem(BuildContext context, Event event) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Icon
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.event_rounded,
-              size: 20,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(width: 16),
-          // Bar
-          Container(
-            width: 4,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors
-                  .eventColors[event.colorIndex % AppColors.eventColors.length],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Content
-          Expanded(
-            child: Column(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            showAddEventSheet(
+              context,
+              editEvent: event,
+              initialDate: event.startDate,
+            );
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  event.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.event_rounded,
+                    size: 20,
+                    color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  CalendarDateUtils.formatTimeRange(
-                    event.startDate,
-                    event.endDate,
-                    event.isAllDay,
+                const SizedBox(width: 16),
+                // Bar
+                Container(
+                  width: 4,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color:
+                        AppColors.eventColors[event.colorIndex %
+                            AppColors.eventColors.length],
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 12),
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        CalendarDateUtils.formatTimeRange(
+                          event.startDate,
+                          event.endDate,
+                          event.isAllDay,
+                        ),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
