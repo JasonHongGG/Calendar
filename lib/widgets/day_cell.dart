@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../utils/date_utils.dart';
+import '../utils/lunar_utils.dart';
 
 /// 日期格子組件
 class DayCell extends StatelessWidget {
@@ -48,11 +49,11 @@ class DayCell extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start, // 置頂對齊
           children: [
-            const SizedBox(height: 4), // 頂部間距
+            const SizedBox(height: 2), // 頂部間距 (縮小 4 -> 2)
             // 日期數字 (含背景圓圈)
             Container(
-              width: isCompact ? 22 : 26,
-              height: isCompact ? 22 : 26,
+              width: isCompact ? 20 : 22, // 縮小圓圈 (22/26 -> 20/22)
+              height: isCompact ? 20 : 22,
               decoration: BoxDecoration(
                 gradient: null, // 移除原本的漸層，改成純色
                 color: isToday
@@ -60,7 +61,7 @@ class DayCell extends StatelessWidget {
                     : null, // 移除選中時的背景色
                 shape: BoxShape.rectangle,
                 borderRadius: BorderRadius.circular(
-                  (isCompact ? 22.0 : 26.0) * 0.4,
+                  (isCompact ? 20.0 : 22.0) * 0.4,
                 ), // 圓角約為寬度的 40%
                 boxShadow: isToday
                     ? [
@@ -76,7 +77,7 @@ class DayCell extends StatelessWidget {
                 child: Text(
                   '${date.day}',
                   style: TextStyle(
-                    fontSize: isCompact ? 12 : 14,
+                    fontSize: isCompact ? 10 : 12, // 數字縮小 (12/14 -> 10/12)
                     fontWeight: isToday || isSelected
                         ? FontWeight.w700
                         : FontWeight.w500,
@@ -85,7 +86,21 @@ class DayCell extends StatelessWidget {
                 ),
               ),
             ),
-            // 事件指示點 (僅在 compact 模式顯示，因為普通模式會顯示長條)
+            // 農曆日期
+            if (!isCompact && _isInMonth) ...[
+              Text(
+                LunarUtils.getLunarText(date),
+                style: TextStyle(
+                  fontSize: 9, // 農曆字體 (10 -> 9)
+                  color: AppColors.textTertiary,
+                  fontWeight: FontWeight.w400,
+                  height: 1.1,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.visible,
+              ),
+            ],
+            // 事件指示點 (僅在 compact 模式顯示)
             if (eventColors.isNotEmpty && isCompact) ...[
               const SizedBox(height: 2),
               _buildCompactEventDots(),
