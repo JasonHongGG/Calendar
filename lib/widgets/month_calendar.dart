@@ -159,31 +159,33 @@ class MonthCalendar extends StatelessWidget {
             ),
           ),
           // 選中框覆蓋層 (最上層，確保不被事件遮擋)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: week.map((date) {
-              final isSelected =
-                  selectedDate != null &&
-                  CalendarDateUtils.isSameDay(date, selectedDate!);
+          IgnorePointer(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: week.map((date) {
+                final isSelected =
+                    selectedDate != null &&
+                    CalendarDateUtils.isSameDay(date, selectedDate!);
 
-              if (!isSelected) return const Expanded(child: SizedBox());
+                if (!isSelected) return const Expanded(child: SizedBox());
 
-              return Expanded(
-                child: Container(
-                  margin: const EdgeInsets.all(
-                    1,
-                  ), // Match DayCell margin (1 for compact)
-                  // Note: DayCell code says: margin: EdgeInsets.all(isCompact ? 1 : 1),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: AppColors.textSecondary,
-                      width: 2,
+                return Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.all(
+                      1,
+                    ), // Match DayCell margin (1 for compact)
+                    // Note: DayCell code says: margin: EdgeInsets.all(isCompact ? 1 : 1),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppColors.textSecondary,
+                        width: 1.5,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
         ],
       ),

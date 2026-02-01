@@ -41,7 +41,7 @@ class DayCell extends StatelessWidget {
         margin: EdgeInsets.all(isCompact ? 1 : 1),
         decoration: BoxDecoration(
           border: isSelected
-              ? Border.all(color: AppColors.textSecondary, width: 2)
+              ? Border.all(color: AppColors.textSecondary, width: 1.5)
               : null,
           borderRadius: BorderRadius.circular(12),
         ),

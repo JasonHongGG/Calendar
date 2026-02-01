@@ -3,11 +3,13 @@ import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/calendar_layout.dart';
+import '../utils/date_utils.dart';
 
 import '../widgets/gradient_header.dart';
 import '../widgets/month_calendar.dart';
 
 import '../widgets/add_event_sheet.dart';
+import '../widgets/day_detail_sheet.dart';
 
 /// 月視圖頁面
 class MonthViewPage extends StatefulWidget {
@@ -71,7 +73,7 @@ class _MonthViewPageState extends State<MonthViewPage> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             // Header: Only this part needs to rebuild when month changes
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -140,7 +142,6 @@ class _MonthViewPageState extends State<MonthViewPage> {
                       itemBuilder: (context, index) {
                         final monthDate = _calculateDateFromIndex(index);
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
                             children: [
                               Selector<EventProvider, DateTime>(
@@ -151,11 +152,27 @@ class _MonthViewPageState extends State<MonthViewPage> {
                                     currentMonth: monthDate,
                                     selectedDate: selectedDate,
                                     onDateSelected: (date) {
-                                      context
-                                          .read<EventProvider>()
-                                          .setSelectedDate(date);
+                                      final provider = context
+                                          .read<EventProvider>();
+                                      // 如果已經選中該日期，則打開詳情頁
+                                      if (CalendarDateUtils.isSameDay(
+                                        date,
+                                        selectedDate,
+                                      )) {
+                                        showDialog(
+                                          context: context,
+                                          barrierColor: Colors.black54,
+                                          builder: (context) =>
+                                              DayDetailSheet(date: date),
+                                        );
+                                      } else {
+                                        // 否則只是切換選中日期
+                                        provider.setSelectedDate(date);
+                                      }
                                     },
                                     onEventTap: (event) {
+                                      // Event taps are now disabled in MonthCalendar (IgnorePointer),
+                                      // but keeping this callback just in case logic changes back.
                                       showAddEventSheet(
                                         context,
                                         editEvent: event,
