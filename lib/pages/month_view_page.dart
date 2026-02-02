@@ -291,6 +291,7 @@ class _MonthViewPageState extends State<MonthViewPage> {
           ],
         ),
         child: FloatingActionButton(
+          heroTag: 'month_view_fab',
           onPressed: () =>
               showAddEventSheet(context, initialDate: selectedDate),
           backgroundColor: Colors.transparent,

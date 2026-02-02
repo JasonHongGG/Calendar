@@ -37,11 +37,8 @@ class _AddEventSheetState extends State<AddEventSheet> {
   bool get _isEditing => widget.editEvent != null;
 
   // 提醒功能相關變數
-  bool _isReminderEnabled = false;
-  DateTime? _reminderTime;
-  bool _isReminderExpanded = false;
-  int _reminderViewIndex = 0; // 0: 日期, 1: 時間
-  Key _pickerKey = UniqueKey();
+  final ValueNotifier<bool> _reminderEnabledNotifier = ValueNotifier(false);
+  final ValueNotifier<DateTime?> _reminderTimeNotifier = ValueNotifier(null);
 
   @override
   void initState() {
@@ -56,12 +53,16 @@ class _AddEventSheetState extends State<AddEventSheet> {
       _selectedColorIndex = event.colorIndex;
 
       if (event.reminderTime != null) {
-        _isReminderEnabled = true;
-        _reminderTime = event.reminderTime!.toLocal();
+        _reminderEnabledNotifier.value = true;
+        _reminderTimeNotifier.value = event.reminderTime!.toLocal();
       } else {
-        _isReminderEnabled = false;
+        _reminderEnabledNotifier.value = false;
         // 預設為開始日期的 00:00
-        _reminderTime = DateTime(_startDate.year, _startDate.month, _startDate.day);
+        _reminderTimeNotifier.value = DateTime(
+          _startDate.year,
+          _startDate.month,
+          _startDate.day,
+        );
       }
     } else {
       final initialDate = widget.initialDate ?? DateTime.now();
@@ -70,7 +71,11 @@ class _AddEventSheetState extends State<AddEventSheet> {
       _selectedColorIndex = -1; // 預設隨機
 
       // 預設為開始日期的 00:00
-      _reminderTime = DateTime(_startDate.year, _startDate.month, _startDate.day);
+      _reminderTimeNotifier.value = DateTime(
+        _startDate.year,
+        _startDate.month,
+        _startDate.day,
+      );
     }
   }
 
@@ -78,16 +83,21 @@ class _AddEventSheetState extends State<AddEventSheet> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _reminderEnabledNotifier.dispose();
+    _reminderTimeNotifier.dispose();
     super.dispose();
   }
-
   // 當我們更改開始日期時，如果提醒時間還沒被手動設定過（或者我們希望保持同步），需要更新預設值
   // 這裡簡單起見，如果提醒時間早於新的開始日期，或者用戶還沒啟用提醒，我們可以更新它
   void _updateDefaultReminderTime() {
     // 預設時間始終保持為開始日期的 00:00，除非用戶手動調整過
     // 但根據需求 "預設就是事件第一天的當天 00:00"，我們在切換日期時同步更新這個默認值比較好
-    if (!_isReminderEnabled) {
-      _reminderTime = DateTime(_startDate.year, _startDate.month, _startDate.day);
+    if (!_reminderEnabledNotifier.value) {
+      _reminderTimeNotifier.value = DateTime(
+        _startDate.year,
+        _startDate.month,
+        _startDate.day,
+      );
     }
   }
 
@@ -271,320 +281,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
   // I will target the initState, build method, and insert the new section.
 
   Widget _buildReminderSection() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
-        boxShadow: [BoxShadow(color: AppColors.shadowLight, blurRadius: 16, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        children: [
-          // Row 1: Header (Icon + Title + Switch)
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: _isReminderEnabled ? AppColors.gradientStart.withValues(alpha: 0.1) : AppColors.background, shape: BoxShape.circle),
-                child: Icon(Icons.notifications_rounded, size: 20, color: _isReminderEnabled ? AppColors.gradientStart : AppColors.textTertiary),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                '提醒',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () {
-                  final value = !_isReminderEnabled;
-                  setState(() {
-                    _isReminderEnabled = value;
-                    if (value) {
-                      _isReminderExpanded = false; // Default to collapsed
-                      _reminderViewIndex = -1; // Default to NO selection
-                      // Ensure default if null
-                      _reminderTime ??= DateTime(_startDate.year, _startDate.month, _startDate.day);
-                    } else {
-                      _isReminderExpanded = false;
-                    }
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 50,
-                  height: 30,
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), gradient: _isReminderEnabled ? AppColors.primaryGradient : null, color: _isReminderEnabled ? null : AppColors.textTertiary.withValues(alpha: 0.2)),
-                  child: AnimatedAlign(
-                    duration: const Duration(milliseconds: 200),
-                    alignment: _isReminderEnabled ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Row 2: Date & Time Blocks (Visible if enabled)
-          if (_isReminderEnabled && _reminderTime != null) ...[
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                // Date Block
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (_isReminderExpanded && _reminderViewIndex == 0) {
-                          _isReminderExpanded = false;
-                        } else {
-                          _reminderViewIndex = 0;
-                          _isReminderExpanded = true;
-                          _pickerKey = UniqueKey();
-                        }
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: _isReminderExpanded && _reminderViewIndex == 0 ? AppColors.gradientStart.withValues(alpha: 0.1) : AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        border: _isReminderExpanded && _reminderViewIndex == 0 ? Border.all(color: AppColors.gradientStart) : Border.all(color: Colors.transparent),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            '日期',
-                            style: TextStyle(fontSize: 12, color: _isReminderExpanded && _reminderViewIndex == 0 ? AppColors.gradientStart : AppColors.textTertiary, fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            CalendarDateUtils.formatYearMonthDaySlash(_reminderTime!),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _isReminderExpanded && _reminderViewIndex == 0 ? AppColors.gradientStart : AppColors.textPrimary),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Time Block
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (_isReminderExpanded && _reminderViewIndex == 1) {
-                          _isReminderExpanded = false;
-                        } else {
-                          _reminderViewIndex = 1;
-                          _isReminderExpanded = true;
-                          _pickerKey = UniqueKey();
-                        }
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: _isReminderExpanded && _reminderViewIndex == 1 ? AppColors.gradientStart.withValues(alpha: 0.1) : AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        border: _isReminderExpanded && _reminderViewIndex == 1 ? Border.all(color: AppColors.gradientStart) : Border.all(color: Colors.transparent),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            '時間',
-                            style: TextStyle(fontSize: 12, color: _isReminderExpanded && _reminderViewIndex == 1 ? AppColors.gradientStart : AppColors.textTertiary, fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            CalendarDateUtils.formatTime(_reminderTime!),
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _isReminderExpanded && _reminderViewIndex == 1 ? AppColors.gradientStart : AppColors.textPrimary),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          // Expanded Picker Area
-          AnimatedCrossFade(firstChild: const SizedBox(height: 0), secondChild: _isReminderEnabled ? _buildReminderPicker() : const SizedBox(height: 0), crossFadeState: _isReminderExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst, duration: const Duration(milliseconds: 300), sizeCurve: Curves.easeInOut),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReminderPicker() {
-    return Column(
-      key: _pickerKey,
-      children: [
-        const SizedBox(height: 16),
-        // Custom Wheel Picker
-        SizedBox(
-          height: 100, // Compact height for desired visibility (~3 items)
-          child: _reminderViewIndex == 0 ? _buildCustomDatePicker() : _buildCustomTimePicker(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCustomDatePicker() {
-    // Basic range for years
-    final currentYear = DateTime.now().year;
-    // Let's offer a range from 10 years ago to 50 years in future, or just fixed logic
-    final years = List.generate(60, (index) => (currentYear - 5) + index);
-    final months = List.generate(12, (index) => index + 1);
-
-    // Calculate days in current month to avoid invalid index
-    final daysInMonth = DateUtils.getDaysInMonth(_reminderTime!.year, _reminderTime!.month);
-    final days = List.generate(daysInMonth, (index) => index + 1);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Year
-        _buildPickerColumn(
-          items: years.map((e) => e.toString()).toList(),
-          initialItem: years.indexOf(_reminderTime!.year).clamp(0, years.length - 1),
-          fontSize: 26,
-          itemHeight: 40,
-          width: 80, // Reduced from 90
-          onSelectedItemChanged: (index) {
-            final newYear = years[index];
-            final maxDays = DateUtils.getDaysInMonth(newYear, _reminderTime!.month);
-            final newDay = min(_reminderTime!.day, maxDays);
-            setState(() {
-              _reminderTime = DateTime(newYear, _reminderTime!.month, newDay, _reminderTime!.hour, _reminderTime!.minute);
-            });
-          },
-        ),
-        _buildPickerSeparator('/', fontSize: 26, height: 40),
-        // Month
-        _buildPickerColumn(
-          items: months.map((e) => e.toString().padLeft(2, '0')).toList(),
-          initialItem: _reminderTime!.month - 1,
-          fontSize: 26,
-          itemHeight: 40,
-          width: 60, // Reduced from 70
-          onSelectedItemChanged: (index) {
-            final newMonth = index + 1;
-            final maxDays = DateUtils.getDaysInMonth(_reminderTime!.year, newMonth);
-            final newDay = min(_reminderTime!.day, maxDays);
-            setState(() {
-              _reminderTime = DateTime(_reminderTime!.year, newMonth, newDay, _reminderTime!.hour, _reminderTime!.minute);
-            });
-          },
-        ),
-        _buildPickerSeparator('/', fontSize: 26, height: 40),
-        // Day
-        _buildPickerColumn(
-          items: days.map((e) => e.toString().padLeft(2, '0')).toList(),
-          initialItem: _reminderTime!.day - 1,
-          fontSize: 26,
-          itemHeight: 40,
-          width: 60, // Reduced from 70
-          onSelectedItemChanged: (index) {
-            final newDay = index + 1;
-            setState(() {
-              _reminderTime = DateTime(_reminderTime!.year, _reminderTime!.month, newDay, _reminderTime!.hour, _reminderTime!.minute);
-            });
-          },
-          // Key to refresh day picker if days count changes
-          key: ValueKey('day_picker_${daysInMonth}'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCustomTimePicker() {
-    final hours = List.generate(24, (index) => index);
-    final minutes = List.generate(60, (index) => index);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Hour
-        _buildPickerColumn(
-          items: hours.map((e) => e.toString().padLeft(2, '0')).toList(),
-          initialItem: _reminderTime!.hour,
-          fontSize: 32, // Much larger for Time
-          itemHeight: 45,
-          width: 80,
-          onSelectedItemChanged: (index) {
-            setState(() {
-              _reminderTime = DateTime(_reminderTime!.year, _reminderTime!.month, _reminderTime!.day, index, _reminderTime!.minute);
-            });
-          },
-        ),
-        _buildPickerSeparator(':', fontSize: 26, height: 45),
-        // Minute
-        _buildPickerColumn(
-          items: minutes.map((e) => e.toString().padLeft(2, '0')).toList(),
-          initialItem: _reminderTime!.minute,
-          fontSize: 32, // Much larger for Time
-          itemHeight: 45,
-          width: 80,
-          onSelectedItemChanged: (index) {
-            setState(() {
-              _reminderTime = DateTime(_reminderTime!.year, _reminderTime!.month, _reminderTime!.day, _reminderTime!.hour, index);
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPickerColumn({required List<String> items, required int initialItem, required ValueChanged<int> onSelectedItemChanged, Key? key, double fontSize = 18, double width = 60, double itemHeight = 32}) {
-    return SizedBox(
-      width: width,
-      child: CupertinoPicker(
-        key: key,
-        scrollController: FixedExtentScrollController(initialItem: initialItem),
-        itemExtent: itemHeight, // Compact item height
-        onSelectedItemChanged: onSelectedItemChanged,
-        squeeze: 1.2, // Tighter spacing
-        diameterRatio: 1.5, // Tighter curve
-        selectionOverlay: Container(
-          decoration: const BoxDecoration(
-            border: Border.symmetric(horizontal: BorderSide(color: AppColors.divider, width: 0.5)),
-          ),
-        ),
-        children: items
-            .map(
-              (item) => Center(
-                child: Text(
-                  item,
-                  style: TextStyle(fontSize: fontSize, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _buildPickerSeparator(String text, {double fontSize = 18, double height = 32}) {
-    return Container(
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      height: height,
-      child: Text(
-        text,
-        style: TextStyle(fontSize: fontSize, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
-      ),
+    return _ReminderSection(
+      startDate: _startDate,
+      reminderEnabledNotifier: _reminderEnabledNotifier,
+      reminderTimeNotifier: _reminderTimeNotifier,
     );
   }
 
@@ -605,8 +305,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
       finalColorIndex = _selectedColorIndex;
     }
 
-    final reminderToSave = _isReminderEnabled ? _reminderTime?.toLocal() : null;
-    if (_isReminderEnabled && reminderToSave != null) {
+    final reminderToSave = _reminderEnabledNotifier.value
+      ? _reminderTimeNotifier.value?.toLocal()
+      : null;
+    if (_reminderEnabledNotifier.value && reminderToSave != null) {
       final now = DateTime.now();
       if (!reminderToSave.isAfter(now)) {
         if (context.mounted) {
@@ -1036,6 +738,573 @@ class _AddEventSheetState extends State<AddEventSheet> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReminderSection extends StatefulWidget {
+  final DateTime startDate;
+  final ValueNotifier<bool> reminderEnabledNotifier;
+  final ValueNotifier<DateTime?> reminderTimeNotifier;
+
+  const _ReminderSection({
+    required this.startDate,
+    required this.reminderEnabledNotifier,
+    required this.reminderTimeNotifier,
+  });
+
+  @override
+  State<_ReminderSection> createState() => _ReminderSectionState();
+}
+
+class _ReminderSectionState extends State<_ReminderSection> {
+  bool _isReminderExpanded = false;
+  int _reminderViewIndex = -1; // 0: 日期, 1: 時間
+  Key _pickerKey = UniqueKey();
+
+  late FixedExtentScrollController _yearController;
+  late FixedExtentScrollController _monthController;
+  late FixedExtentScrollController _dayController;
+  late FixedExtentScrollController _hourController;
+  late FixedExtentScrollController _minuteController;
+
+  @override
+  void initState() {
+    super.initState();
+    _initControllers();
+    widget.reminderEnabledNotifier.addListener(_handleReminderEnabledChange);
+  }
+
+  @override
+  void dispose() {
+    widget.reminderEnabledNotifier.removeListener(_handleReminderEnabledChange);
+    _yearController.dispose();
+    _monthController.dispose();
+    _dayController.dispose();
+    _hourController.dispose();
+    _minuteController.dispose();
+    super.dispose();
+  }
+
+  void _handleReminderEnabledChange() {
+    if (!widget.reminderEnabledNotifier.value) {
+      setState(() {
+        _isReminderExpanded = false;
+        _reminderViewIndex = -1;
+      });
+    }
+  }
+
+  void _initControllers() {
+    final reminder = widget.reminderTimeNotifier.value ?? widget.startDate;
+    final yearStart = DateTime.now().year - 5;
+    final yearIndex = (reminder.year - yearStart).clamp(0, 59);
+    _yearController = FixedExtentScrollController(initialItem: yearIndex);
+    _monthController = FixedExtentScrollController(initialItem: reminder.month - 1);
+    _dayController = FixedExtentScrollController(initialItem: reminder.day - 1);
+    _hourController = FixedExtentScrollController(initialItem: reminder.hour);
+    _minuteController = FixedExtentScrollController(initialItem: reminder.minute);
+  }
+
+  void _jumpControllersTo(DateTime reminder) {
+    final yearStart = DateTime.now().year - 5;
+    final yearIndex = (reminder.year - yearStart).clamp(0, 59);
+    if (_yearController.hasClients) {
+      _yearController.jumpToItem(yearIndex);
+    }
+    if (_monthController.hasClients) {
+      _monthController.jumpToItem(reminder.month - 1);
+    }
+    if (_dayController.hasClients) {
+      _dayController.jumpToItem(reminder.day - 1);
+    }
+    if (_hourController.hasClients) {
+      _hourController.jumpToItem(reminder.hour);
+    }
+    if (_minuteController.hasClients) {
+      _minuteController.jumpToItem(reminder.minute);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: widget.reminderEnabledNotifier,
+      builder: (context, isEnabled, _) {
+        return ValueListenableBuilder<DateTime?>(
+          valueListenable: widget.reminderTimeNotifier,
+          builder: (context, reminderTime, __) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.divider.withValues(alpha: 0.5),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadowLight,
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  // Row 1: Header (Icon + Title + Switch)
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isEnabled
+                              ? AppColors.gradientStart.withValues(alpha: 0.1)
+                              : AppColors.background,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.notifications_rounded,
+                          size: 20,
+                          color: isEnabled
+                              ? AppColors.gradientStart
+                              : AppColors.textTertiary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        '提醒',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () {
+                          final value = !isEnabled;
+                          widget.reminderEnabledNotifier.value = value;
+                          if (value) {
+                            if (widget.reminderTimeNotifier.value == null) {
+                              widget.reminderTimeNotifier.value = DateTime(
+                                widget.startDate.year,
+                                widget.startDate.month,
+                                widget.startDate.day,
+                              );
+                            }
+                            final current = widget.reminderTimeNotifier.value;
+                            if (current != null) {
+                              _jumpControllersTo(current);
+                            }
+                            setState(() {
+                              _isReminderExpanded = false;
+                              _reminderViewIndex = -1;
+                            });
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 50,
+                          height: 30,
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient:
+                                isEnabled ? AppColors.primaryGradient : null,
+                            color: isEnabled
+                                ? null
+                                : AppColors.textTertiary.withValues(alpha: 0.2),
+                          ),
+                          child: AnimatedAlign(
+                            duration: const Duration(milliseconds: 200),
+                            alignment: isEnabled
+                                ? Alignment.centerRight
+                                : Alignment.centerLeft,
+                            child: Container(
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Row 2: Date & Time Blocks (Visible if enabled)
+                  if (isEnabled && reminderTime != null) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        // Date Block
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (_isReminderExpanded &&
+                                    _reminderViewIndex == 0) {
+                                  _isReminderExpanded = false;
+                                } else {
+                                  _reminderViewIndex = 0;
+                                  _isReminderExpanded = true;
+                                  _pickerKey = UniqueKey();
+                                }
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _isReminderExpanded &&
+                                        _reminderViewIndex == 0
+                                    ? AppColors.gradientStart
+                                        .withValues(alpha: 0.1)
+                                    : AppColors.background,
+                                borderRadius: BorderRadius.circular(12),
+                                border: _isReminderExpanded &&
+                                        _reminderViewIndex == 0
+                                    ? Border.all(
+                                        color: AppColors.gradientStart,
+                                      )
+                                    : Border.all(color: Colors.transparent),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    '日期',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: _isReminderExpanded &&
+                                              _reminderViewIndex == 0
+                                          ? AppColors.gradientStart
+                                          : AppColors.textTertiary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    CalendarDateUtils
+                                        .formatYearMonthDaySlash(
+                                      reminderTime,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: _isReminderExpanded &&
+                                              _reminderViewIndex == 0
+                                          ? AppColors.gradientStart
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Time Block
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (_isReminderExpanded &&
+                                    _reminderViewIndex == 1) {
+                                  _isReminderExpanded = false;
+                                } else {
+                                  _reminderViewIndex = 1;
+                                  _isReminderExpanded = true;
+                                  _pickerKey = UniqueKey();
+                                }
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _isReminderExpanded &&
+                                        _reminderViewIndex == 1
+                                    ? AppColors.gradientStart
+                                        .withValues(alpha: 0.1)
+                                    : AppColors.background,
+                                borderRadius: BorderRadius.circular(12),
+                                border: _isReminderExpanded &&
+                                        _reminderViewIndex == 1
+                                    ? Border.all(
+                                        color: AppColors.gradientStart,
+                                      )
+                                    : Border.all(color: Colors.transparent),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    '時間',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: _isReminderExpanded &&
+                                              _reminderViewIndex == 1
+                                          ? AppColors.gradientStart
+                                          : AppColors.textTertiary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    CalendarDateUtils.formatTime(reminderTime),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: _isReminderExpanded &&
+                                              _reminderViewIndex == 1
+                                          ? AppColors.gradientStart
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+
+                  // Expanded Picker Area
+                  AnimatedCrossFade(
+                    firstChild: const SizedBox(height: 0),
+                    secondChild: isEnabled
+                        ? _buildReminderPicker(reminderTime)
+                        : const SizedBox(height: 0),
+                    crossFadeState: _isReminderExpanded
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                    duration: const Duration(milliseconds: 300),
+                    sizeCurve: Curves.easeInOut,
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildReminderPicker(DateTime? reminderTime) {
+    if (reminderTime == null) {
+      return const SizedBox(height: 0);
+    }
+    return Column(
+      key: _pickerKey,
+      children: [
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 100,
+          child: _reminderViewIndex == 0
+              ? _buildCustomDatePicker(reminderTime)
+              : _buildCustomTimePicker(reminderTime),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCustomDatePicker(DateTime reminderTime) {
+    final currentYear = DateTime.now().year;
+    final years = List.generate(60, (index) => (currentYear - 5) + index);
+    final months = List.generate(12, (index) => index + 1);
+    final daysInMonth =
+        DateUtils.getDaysInMonth(reminderTime.year, reminderTime.month);
+    final days = List.generate(daysInMonth, (index) => index + 1);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildPickerColumn(
+          items: years.map((e) => e.toString()).toList(),
+          controller: _yearController,
+          fontSize: 26,
+          itemHeight: 40,
+          width: 80,
+          onSelectedItemChanged: (index) {
+            final newYear = years[index];
+            final maxDays =
+                DateUtils.getDaysInMonth(newYear, reminderTime.month);
+            final newDay = min(reminderTime.day, maxDays);
+            widget.reminderTimeNotifier.value = DateTime(
+              newYear,
+              reminderTime.month,
+              newDay,
+              reminderTime.hour,
+              reminderTime.minute,
+            );
+            if (_dayController.hasClients) {
+              _dayController.jumpToItem(newDay - 1);
+            }
+          },
+        ),
+        _buildPickerSeparator('/', fontSize: 26, height: 40),
+        _buildPickerColumn(
+          items: months.map((e) => e.toString().padLeft(2, '0')).toList(),
+          controller: _monthController,
+          fontSize: 26,
+          itemHeight: 40,
+          width: 60,
+          onSelectedItemChanged: (index) {
+            final newMonth = index + 1;
+            final maxDays =
+                DateUtils.getDaysInMonth(reminderTime.year, newMonth);
+            final newDay = min(reminderTime.day, maxDays);
+            widget.reminderTimeNotifier.value = DateTime(
+              reminderTime.year,
+              newMonth,
+              newDay,
+              reminderTime.hour,
+              reminderTime.minute,
+            );
+            if (_dayController.hasClients) {
+              _dayController.jumpToItem(newDay - 1);
+            }
+          },
+        ),
+        _buildPickerSeparator('/', fontSize: 26, height: 40),
+        _buildPickerColumn(
+          items: days.map((e) => e.toString().padLeft(2, '0')).toList(),
+          controller: _dayController,
+          fontSize: 26,
+          itemHeight: 40,
+          width: 60,
+          onSelectedItemChanged: (index) {
+            final newDay = index + 1;
+            widget.reminderTimeNotifier.value = DateTime(
+              reminderTime.year,
+              reminderTime.month,
+              newDay,
+              reminderTime.hour,
+              reminderTime.minute,
+            );
+          },
+          key: ValueKey('day_picker_${daysInMonth}'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCustomTimePicker(DateTime reminderTime) {
+    final hours = List.generate(24, (index) => index);
+    final minutes = List.generate(60, (index) => index);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildPickerColumn(
+          items: hours.map((e) => e.toString().padLeft(2, '0')).toList(),
+          controller: _hourController,
+          fontSize: 32,
+          itemHeight: 45,
+          width: 80,
+          onSelectedItemChanged: (index) {
+            widget.reminderTimeNotifier.value = DateTime(
+              reminderTime.year,
+              reminderTime.month,
+              reminderTime.day,
+              index,
+              reminderTime.minute,
+            );
+          },
+        ),
+        _buildPickerSeparator(':', fontSize: 26, height: 45),
+        _buildPickerColumn(
+          items: minutes.map((e) => e.toString().padLeft(2, '0')).toList(),
+          controller: _minuteController,
+          fontSize: 32,
+          itemHeight: 45,
+          width: 80,
+          onSelectedItemChanged: (index) {
+            widget.reminderTimeNotifier.value = DateTime(
+              reminderTime.year,
+              reminderTime.month,
+              reminderTime.day,
+              reminderTime.hour,
+              index,
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPickerColumn({
+    required List<String> items,
+    required FixedExtentScrollController controller,
+    required ValueChanged<int> onSelectedItemChanged,
+    Key? key,
+    double fontSize = 18,
+    double width = 60,
+    double itemHeight = 32,
+  }) {
+    return SizedBox(
+      width: width,
+      child: CupertinoPicker(
+        key: key,
+        scrollController: controller,
+        itemExtent: itemHeight,
+        onSelectedItemChanged: onSelectedItemChanged,
+        squeeze: 1.2,
+        diameterRatio: 1.5,
+        selectionOverlay: Container(
+          decoration: const BoxDecoration(
+            border: Border.symmetric(
+              horizontal: BorderSide(color: AppColors.divider, width: 0.5),
+            ),
+          ),
+        ),
+        children: items
+            .map(
+              (item) => Center(
+                child: Text(
+                  item,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _buildPickerSeparator(
+    String text, {
+    double fontSize = 18,
+    double height = 32,
+  }) {
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      height: height,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: fontSize,
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

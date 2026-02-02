@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/date_symbol_data_local.dart';
-import 'providers/event_provider.dart';
 import 'theme/app_theme.dart';
-import 'services/notification_service.dart';
-import 'pages/home_page.dart';
+import 'providers/event_provider.dart';
+import 'pages/splash_page.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 初始化日期本地化
-  await initializeDateFormatting('zh_TW', null);
-
-  // 設定系統 UI 樣式
+  // Set System UI
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -23,16 +18,9 @@ void main() async {
     ),
   );
 
-  // 初始化 NotificationService
-  await NotificationService().init();
-
-  // 初始化 EventProvider
-  final eventProvider = EventProvider();
-  await eventProvider.init();
-
   runApp(
-    ChangeNotifierProvider.value(
-      value: eventProvider,
+    MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => EventProvider())],
       child: const CalendarApp(),
     ),
   );
@@ -44,10 +32,10 @@ class CalendarApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '行事曆',
+      title: 'Calendar',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const HomePage(),
+      home: const SplashPage(),
     );
   }
 }
