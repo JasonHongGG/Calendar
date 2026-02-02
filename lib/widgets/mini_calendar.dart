@@ -8,6 +8,7 @@ import '../utils/date_utils.dart';
 import 'day_cell.dart';
 
 import 'gradient_header.dart'; // Import CalendarHeader
+import 'date_selector_modal.dart';
 
 /// 迷你月曆組件（用於日程視圖，支持左右滑動）
 class MiniCalendar extends StatefulWidget {
@@ -68,6 +69,19 @@ class _MiniCalendarState extends State<MiniCalendar> {
     return DateTime(_startYear, _startMonth + index);
   }
 
+  void _showDateSelector(BuildContext context, DateTime currentMonth) {
+    showDialog(
+      context: context,
+      builder: (context) => DateSelectorModal(
+        initialDate: currentMonth,
+        onConfirm: (selectedDate) {
+          final index = _calculateIndex(selectedDate);
+          _pageController.jumpToPage(index);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -104,6 +118,13 @@ class _MiniCalendarState extends State<MiniCalendar> {
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                 );
+              },
+              onTitleTap: () => _showDateSelector(context, widget.currentMonth),
+              onTodayTap: () {
+                final now = DateTime.now();
+                final index = _calculateIndex(now);
+                _pageController.jumpToPage(index);
+                widget.onDateSelected?.call(now);
               },
               // Mini calendar may not need settings button
               onSettings: null,
