@@ -99,7 +99,7 @@ class DayCell extends StatelessWidget {
           width: 4,
           height: 4,
           margin: const EdgeInsets.symmetric(horizontal: 0.5),
-          decoration: BoxDecoration(color: isToday ? Colors.white.withValues(alpha: 0.8) : color, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         );
       }).toList(),
     );
