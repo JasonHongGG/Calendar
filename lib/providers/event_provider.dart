@@ -73,39 +73,15 @@ class EventProvider extends ChangeNotifier {
   }
 
   /// 新增事件
-  Future<void> addEvent({
-    required String title,
-    required DateTime startDate,
-    required DateTime endDate,
-    bool isAllDay = false,
-    int colorIndex = 0,
-    String? location,
-    String? description,
-    DateTime? reminderTime,
-  }) async {
-    final event = Event(
-      id: _uuid.v4(),
-      title: title,
-      startDate: startDate,
-      endDate: endDate,
-      isAllDay: isAllDay,
-      colorIndex: colorIndex,
-      location: location,
-      description: description,
-      reminderTime: reminderTime,
-    );
+  Future<void> addEvent({required String title, required DateTime startDate, required DateTime endDate, bool isAllDay = false, int colorIndex = 0, String? location, String? description, DateTime? reminderTime}) async {
+    final event = Event(id: _uuid.v4(), title: title, startDate: startDate, endDate: endDate, isAllDay: isAllDay, colorIndex: colorIndex, location: location, description: description, reminderTime: reminderTime);
 
     await _eventsBox?.put(event.id, event);
 
     if (reminderTime != null) {
       // Use hashCode as notification ID (simple way)
       // Note: UUID hashcode might not be unique enough for int32 limit, but acceptable for this scale
-      await NotificationService().scheduleNotification(
-        id: event.id.hashCode,
-        title: '行事曆提醒: $title',
-        body: CalendarDateUtils.formatEventTime(startDate, endDate, isAllDay),
-        scheduledDate: reminderTime,
-      );
+      await NotificationService().scheduleNotification(id: _notificationIdForEventId(event.id), title: '行事曆提醒: $title', body: CalendarDateUtils.formatEventTime(startDate, endDate, isAllDay), scheduledDate: reminderTime);
     }
     _loadEvents();
   }
@@ -115,19 +91,10 @@ class EventProvider extends ChangeNotifier {
     await _eventsBox?.put(event.id, event);
 
     // Cancel existing notification first (just in case)
-    await NotificationService().cancelNotification(event.id.hashCode);
+    await NotificationService().cancelNotification(_notificationIdForEventId(event.id));
 
     if (event.reminderTime != null) {
-      await NotificationService().scheduleNotification(
-        id: event.id.hashCode,
-        title: '行事曆提醒: ${event.title}',
-        body: CalendarDateUtils.formatEventTime(
-          event.startDate,
-          event.endDate,
-          event.isAllDay,
-        ),
-        scheduledDate: event.reminderTime!,
-      );
+      await NotificationService().scheduleNotification(id: _notificationIdForEventId(event.id), title: '行事曆提醒: ${event.title}', body: CalendarDateUtils.formatEventTime(event.startDate, event.endDate, event.isAllDay), scheduledDate: event.reminderTime!);
     }
     _loadEvents();
   }
@@ -137,7 +104,7 @@ class EventProvider extends ChangeNotifier {
     // We need to know the ID hashcode to cancel, assuming string ID is available
     // In delete, we often have the object. If we only have ID, we need to be careful.
     // However, string.hashCode is deterministic.
-    await NotificationService().cancelNotification(eventId.hashCode);
+    await NotificationService().cancelNotification(_notificationIdForEventId(eventId));
 
     await _eventsBox?.delete(eventId);
     _loadEvents();
@@ -146,6 +113,10 @@ class EventProvider extends ChangeNotifier {
   /// 取得指定日期的事件
   List<Event> getEventsForDate(DateTime date) {
     return _events.where((event) => event.isOnDate(date)).toList();
+  }
+
+  int _notificationIdForEventId(String eventId) {
+    return eventId.hashCode & 0x7fffffff;
   }
 
   /// 取得指定月份的事件
@@ -179,11 +150,7 @@ class EventProvider extends ChangeNotifier {
 
   /// 取得指定日期的事件顏色（用於日曆上的小圓點）
   List<int> getEventColorsForDate(DateTime date) {
-    return _events
-        .where((event) => event.isOnDate(date))
-        .map((event) => event.colorIndex)
-        .toSet()
-        .toList();
+    return _events.where((event) => event.isOnDate(date)).map((event) => event.colorIndex).toSet().toList();
   }
 
   /// 取得即將到來的事件（從今天開始的 7 天內）
@@ -193,11 +160,7 @@ class EventProvider extends ChangeNotifier {
 
     final Map<DateTime, List<Event>> grouped = {};
 
-    for (
-      var date = today;
-      !date.isAfter(endDate);
-      date = date.add(const Duration(days: 1))
-    ) {
+    for (var date = today; !date.isAfter(endDate); date = date.add(const Duration(days: 1))) {
       final eventsOnDate = getEventsForDate(date);
       if (eventsOnDate.isNotEmpty) {
         grouped[date] = eventsOnDate;

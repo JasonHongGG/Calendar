@@ -19,6 +19,7 @@ dependencies:
   lunar: ^1.7.8
   flutter_local_notifications: ^20.0.0
   timezone: ^0.10.1
+  flutter_timezone: ^5.0.1
 
 dev_dependencies:
   flutter_test:
