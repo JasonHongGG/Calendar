@@ -25,7 +25,7 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
 
     // 計算該週的每一天 (假設週一為第一天)
     final daysOfWeek = _getDaysInWeek(selectedDate);
-    final title = '${daysOfWeek.first.month}月 第${_getWeekNumber(selectedDate)}週';
+    final title = CalendarDateUtils.formatDateRange(daysOfWeek.first, daysOfWeek.last);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -118,22 +118,22 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
           children: [
             // 左側：日期顯示
             SizedBox(
-              width: 50,
+              width: 60,
               child: Column(
                 children: [
                   Text(
                     weekday,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isToday ? AppColors.gradientStart : AppColors.textTertiary),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isToday ? AppColors.gradientStart : AppColors.textSecondary),
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 40,
+                    height: 40,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(color: isToday ? AppColors.gradientStart : Colors.transparent, shape: BoxShape.circle),
                     child: Text(
                       '${date.day}',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isToday ? Colors.white : AppColors.textPrimary),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: isToday ? Colors.white : AppColors.textPrimary),
                     ),
                   ),
                 ],

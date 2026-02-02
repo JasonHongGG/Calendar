@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// 漸層標題組件
 /// 日曆標題組件 (無漸層，簡約風格)
 class CalendarHeader extends StatelessWidget {
   final String title;
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
   final VoidCallback? onSettings;
+  final VoidCallback? onTitleTap;
+  final VoidCallback? onTodayTap;
 
   const CalendarHeader({
     super.key,
@@ -15,6 +16,8 @@ class CalendarHeader extends StatelessWidget {
     this.onPrevious,
     this.onNext,
     this.onSettings,
+    this.onTitleTap,
+    this.onTodayTap,
   });
 
   @override
@@ -33,13 +36,16 @@ class CalendarHeader extends StatelessWidget {
                 onTap: onPrevious,
               ),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+              GestureDetector(
+                onTap: onTitleTap,
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -49,8 +55,23 @@ class CalendarHeader extends StatelessWidget {
               ),
             ],
           ),
-          // 右側設定按鈕
-          _buildIconButton(icon: Icons.settings_outlined, onTap: onSettings),
+          // 右側按鈕區塊
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onTodayTap != null) ...[
+                _buildIconButton(
+                  icon: Icons.calendar_today_outlined,
+                  onTap: onTodayTap,
+                ),
+                const SizedBox(width: 4),
+              ],
+              _buildIconButton(
+                icon: Icons.settings_outlined,
+                onTap: onSettings,
+              ),
+            ],
+          ),
         ],
       ),
     );

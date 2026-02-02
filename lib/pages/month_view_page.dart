@@ -11,6 +11,7 @@ import '../widgets/gradient_header.dart';
 import '../widgets/month_calendar.dart';
 import '../widgets/add_event_sheet.dart';
 import '../widgets/day_detail_sheet.dart';
+import '../widgets/date_selector_modal.dart';
 
 /// 月視圖頁面
 class MonthViewPage extends StatefulWidget {
@@ -43,7 +44,8 @@ class _MonthViewPageState extends State<MonthViewPage> {
     // Sync controller if provider changed externally (e.g. "Today" action elsewhere)
     final provider = context.read<EventProvider>();
     final currentIndex = _calculateIndex(provider.currentMonth);
-    if (_pageController.hasClients && _pageController.page?.round() != currentIndex) {
+    if (_pageController.hasClients &&
+        _pageController.page?.round() != currentIndex) {
       _pageController.jumpToPage(currentIndex);
     }
   }
@@ -63,6 +65,19 @@ class _MonthViewPageState extends State<MonthViewPage> {
     return DateTime(_startYear, _startMonth + index);
   }
 
+  void _showDateSelector(BuildContext context, DateTime currentMonth) {
+    showDialog(
+      context: context,
+      builder: (context) => DateSelectorModal(
+        initialDate: currentMonth,
+        onConfirm: (selectedDate) {
+          final index = _calculateIndex(selectedDate);
+          _pageController.jumpToPage(index);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,17 +88,32 @@ class _MonthViewPageState extends State<MonthViewPage> {
             const SizedBox(height: AppDimens.spacingSmall),
             // Header: Only this part needs to rebuild when month changes
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppDimens.spacingNormal),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.spacingNormal,
+              ),
               child: Consumer<EventProvider>(
                 builder: (context, provider, child) {
                   final currentMonth = provider.currentMonth;
                   return CalendarHeader(
-                    title: '${currentMonth.year}/${currentMonth.month.toString().padLeft(2, '0')}',
+                    title:
+                        '${currentMonth.year}/${currentMonth.month.toString().padLeft(2, '0')}',
                     onPrevious: () {
-                      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
                     },
                     onNext: () {
-                      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    onTitleTap: () => _showDateSelector(context, currentMonth),
+                    onTodayTap: () {
+                      final now = DateTime.now();
+                      final index = _calculateIndex(now);
+                      _pageController.jumpToPage(index);
                     },
                     onSettings: () {
                       // TODO: Navigate to settings page
@@ -96,12 +126,21 @@ class _MonthViewPageState extends State<MonthViewPage> {
             // Static Calendar Background & Header
             // The PageView will slide strictly inside this container
             Container(
-              height: CalendarLayout.monthContainerHeight, // Use centralized constant
-              margin: const EdgeInsets.symmetric(horizontal: AppDimens.spacingNormal),
+              height: CalendarLayout
+                  .monthContainerHeight, // Use centralized constant
+              margin: const EdgeInsets.symmetric(
+                horizontal: AppDimens.spacingNormal,
+              ),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppDimens.radiusXLarge),
-                boxShadow: [BoxShadow(color: AppColors.shadow.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4))],
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.shadow.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
@@ -117,41 +156,58 @@ class _MonthViewPageState extends State<MonthViewPage> {
                       onPageChanged: (index) {
                         final provider = context.read<EventProvider>();
                         final newMonth = _calculateDateFromIndex(index);
-                        if (newMonth.year != provider.currentMonth.year || newMonth.month != provider.currentMonth.month) {
+                        if (newMonth.year != provider.currentMonth.year ||
+                            newMonth.month != provider.currentMonth.month) {
                           provider.setCurrentMonth(newMonth);
                         }
                         _prewarmTimer?.cancel();
-                        _prewarmTimer = Timer(const Duration(milliseconds: 180), () {
-                          if (!mounted) return;
-                          final events = provider.events;
-                          final eventsVersion = provider.eventsVersion;
-                          final nextMonth = _calculateDateFromIndex(index + 1);
-                          final prewarmKey = '${nextMonth.year}-${nextMonth.month}-$eventsVersion';
-                          if (_lastPrewarmKey == prewarmKey) return;
-                          _lastPrewarmKey = prewarmKey;
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            MonthCalendar.prewarm(events, nextMonth, eventsVersion);
-                          });
-                        });
+                        _prewarmTimer = Timer(
+                          const Duration(milliseconds: 180),
+                          () {
+                            if (!mounted) return;
+                            final events = provider.events;
+                            final eventsVersion = provider.eventsVersion;
+                            final nextMonth = _calculateDateFromIndex(
+                              index + 1,
+                            );
+                            final prewarmKey =
+                                '${nextMonth.year}-${nextMonth.month}-$eventsVersion';
+                            if (_lastPrewarmKey == prewarmKey) return;
+                            _lastPrewarmKey = prewarmKey;
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              MonthCalendar.prewarm(
+                                events,
+                                nextMonth,
+                                eventsVersion,
+                              );
+                            });
+                          },
+                        );
                       },
                       itemBuilder: (context, index) {
                         final monthDate = _calculateDateFromIndex(index);
                         return Column(
                           children: [
                             Selector<EventProvider, DateTime>(
-                              selector: (context, provider) => provider.selectedDate,
+                              selector: (context, provider) =>
+                                  provider.selectedDate,
                               builder: (context, selectedDate, child) {
                                 return MonthCalendar(
                                   currentMonth: monthDate,
                                   selectedDate: selectedDate,
                                   onDateSelected: (date) {
-                                    final provider = context.read<EventProvider>();
+                                    final provider = context
+                                        .read<EventProvider>();
                                     // 如果已經選中該日期，則打開詳情頁
-                                    if (CalendarDateUtils.isSameDay(date, selectedDate)) {
+                                    if (CalendarDateUtils.isSameDay(
+                                      date,
+                                      selectedDate,
+                                    )) {
                                       showDialog(
                                         context: context,
                                         barrierColor: Colors.black54,
-                                        builder: (context) => DayDetailSheet(date: date),
+                                        builder: (context) =>
+                                            DayDetailSheet(date: date),
                                       );
                                     } else {
                                       // 否則只是切換選中日期
@@ -159,7 +215,11 @@ class _MonthViewPageState extends State<MonthViewPage> {
                                     }
                                   },
                                   onEventTap: (event) {
-                                    showAddEventSheet(context, editEvent: event, initialDate: event.startDate);
+                                    showAddEventSheet(
+                                      context,
+                                      editEvent: event,
+                                      initialDate: event.startDate,
+                                    );
                                   },
                                 );
                               },
@@ -204,7 +264,10 @@ class _MonthViewPageState extends State<MonthViewPage> {
 
           return Expanded(
             child: Center(
-              child: Text(label, style: AppTextStyles.weekdayLabel.copyWith(color: textColor)),
+              child: Text(
+                label,
+                style: AppTextStyles.weekdayLabel.copyWith(color: textColor),
+              ),
             ),
           );
         }).toList(),
@@ -219,10 +282,17 @@ class _MonthViewPageState extends State<MonthViewPage> {
         decoration: BoxDecoration(
           gradient: AppColors.primaryGradient,
           shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: AppColors.gradientStart.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6))],
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.gradientStart.withValues(alpha: 0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: FloatingActionButton(
-          onPressed: () => showAddEventSheet(context, initialDate: selectedDate),
+          onPressed: () =>
+              showAddEventSheet(context, initialDate: selectedDate),
           backgroundColor: Colors.transparent,
           elevation: 0,
           child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
