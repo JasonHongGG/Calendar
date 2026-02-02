@@ -15,16 +15,7 @@ class DayCell extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isCompact;
 
-  const DayCell({
-    super.key,
-    required this.date,
-    required this.currentMonth,
-    this.isSelected = false,
-    this.isToday = false,
-    this.eventColors = const [],
-    this.onTap,
-    this.isCompact = false,
-  });
+  const DayCell({super.key, required this.date, required this.currentMonth, this.isSelected = false, this.isToday = false, this.eventColors = const [], this.onTap, this.isCompact = false});
 
   bool get _isInMonth => CalendarDateUtils.isInMonth(date, currentMonth);
   bool get _isSunday => date.weekday == DateTime.sunday;
@@ -43,12 +34,7 @@ class DayCell extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.all(1),
         decoration: BoxDecoration(
-          border: isSelected
-              ? Border.all(
-                  color: AppColors.textSecondary,
-                  width: AppDimens.selectionBorderWidth,
-                )
-              : null,
+          border: isSelected ? Border.all(color: AppColors.textSecondary, width: AppDimens.selectionBorderWidth) : null,
           borderRadius: BorderRadius.circular(AppDimens.radiusMedium),
         ),
         child: Column(
@@ -56,65 +42,35 @@ class DayCell extends StatelessWidget {
           children: [
             const SizedBox(height: 0), // 頂部間距
             // 日期數字 (含背景圓圈)
-            Container(
-              width: isCompact
-                  ? AppDimens.dayCellSizeCompact
-                  : AppDimens.dayCellSize,
-              height: isCompact
-                  ? AppDimens.dayCellSizeCompact
-                  : AppDimens.dayCellSize,
-              decoration: BoxDecoration(
-                gradient: null, // 移除原本的漸層，改成純色
-                color: isToday
-                    ? _dayColor // 今天：背景為該日代表色 (紅/藍/黑)
-                    : null, // 移除選中時的背景色
-                shape: BoxShape.rectangle,
-                borderRadius: BorderRadius.circular(
-                  (isCompact
-                          ? AppDimens.dayCellSizeCompact
-                          : AppDimens.dayCellSize) *
-                      0.4,
-                ), // 圓角約為寬度的 40%
-                boxShadow: isToday
-                    ? [
-                        BoxShadow(
-                          color: _dayColor.withValues(alpha: 0.3),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
+            SizedBox(
+              width: isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize,
+              height: isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize,
               child: Center(
-                child: Text(
-                  '${date.day}',
-                  style:
-                      (isCompact
-                              ? AppTextStyles.dayNumberCompact
-                              : AppTextStyles.dayNumber)
-                          .copyWith(
-                            fontWeight: isToday || isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: _getTextColorWithinCircle(),
-                          ),
+                child: Container(
+                  width: isToday ? (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize) * 0.8 : (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize),
+                  height: isToday ? (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize) * 0.8 : (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize),
+                  decoration: isToday
+                      ? BoxDecoration(
+                          gradient: null, // 移除原本的漸層，改成純色
+                          color: _dayColor, // 今天：背景為該日代表色 (紅/藍/黑)
+                          shape: BoxShape.rectangle,
+                          borderRadius: BorderRadius.circular((isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize) * 0.6 * 0.4),
+                          boxShadow: [BoxShadow(color: _dayColor.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))],
+                        )
+                      : null,
+                  child: Center(
+                    child: Text(
+                      '${date.day}',
+                      style: (isCompact ? AppTextStyles.dayNumberCompact : AppTextStyles.dayNumber).copyWith(fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w500, color: _getTextColorWithinCircle()),
+                    ),
+                  ),
                 ),
               ),
             ),
             // 農曆日期
-            if (!isCompact && _isInMonth) ...[
-              Text(
-                LunarUtils.getLunarText(date),
-                style: AppTextStyles.lunarDate,
-                maxLines: 1,
-                overflow: TextOverflow.visible,
-              ),
-            ],
+            if (!isCompact && _isInMonth) ...[Text(LunarUtils.getLunarText(date), style: AppTextStyles.lunarDate, maxLines: 1, overflow: TextOverflow.visible)],
             // 事件指示點 (僅在 compact 模式顯示)
-            if (eventColors.isNotEmpty && isCompact) ...[
-              const SizedBox(height: AppDimens.spacingTiny / 2),
-              _buildCompactEventDots(),
-            ],
+            if (eventColors.isNotEmpty && isCompact) ...[const SizedBox(height: AppDimens.spacingTiny / 2), _buildCompactEventDots()],
           ],
         ),
       ),
@@ -138,16 +94,12 @@ class DayCell extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: displayColors.map((colorIndex) {
-        final color =
-            AppColors.eventColors[colorIndex % AppColors.eventColors.length];
+        final color = AppColors.eventColors[colorIndex % AppColors.eventColors.length];
         return Container(
           width: 4,
           height: 4,
           margin: const EdgeInsets.symmetric(horizontal: 0.5),
-          decoration: BoxDecoration(
-            color: isToday ? Colors.white.withValues(alpha: 0.8) : color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: isToday ? Colors.white.withValues(alpha: 0.8) : color, shape: BoxShape.circle),
         );
       }).toList(),
     );
