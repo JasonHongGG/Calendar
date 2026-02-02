@@ -9,37 +9,112 @@ import 'day_cell.dart';
 import '../theme/calendar_layout.dart';
 
 /// 完整月曆組件
-class MonthCalendar extends StatelessWidget {
+class MonthCalendar extends StatefulWidget {
   final DateTime currentMonth;
   final DateTime? selectedDate; // 改為可空，若為 null 則不顯示選中狀態
   final Function(DateTime)? onDateSelected;
   final Function(Event)? onEventTap;
 
-  const MonthCalendar({
-    super.key,
-    required this.currentMonth,
-    this.selectedDate,
-    this.onDateSelected,
-    this.onEventTap,
-  });
+  const MonthCalendar({super.key, required this.currentMonth, this.selectedDate, this.onDateSelected, this.onEventTap});
+
+  static final Map<String, _MonthCache> _cache = {};
+
+  static String _cacheKey(DateTime month, int eventsVersion) {
+    return '${month.year}-${month.month}-$eventsVersion';
+  }
+
+  static void prewarm(List<Event> allEvents, DateTime month, int eventsVersion) {
+    final key = _cacheKey(month, eventsVersion);
+    if (_cache.containsKey(key)) return;
+
+    final days = CalendarDateUtils.getCalendarDays(month);
+    final visibleWeeks = _MonthCalendarState._buildVisibleWeeksStatic(days, month);
+    final monthEvents = _MonthCalendarState._getEventsForMonthStatic(allEvents, month);
+    final weekLayouts = <int, List<_WeekEventLayout>>{};
+    for (var i = 0; i < visibleWeeks.length; i++) {
+      weekLayouts[i] = _MonthCalendarState._layoutEventsForWeekStatic(visibleWeeks[i], monthEvents);
+    }
+
+    _cache[key] = _MonthCache(days: days, visibleWeeks: visibleWeeks, monthEvents: monthEvents, weekLayouts: weekLayouts);
+  }
+
+  @override
+  State<MonthCalendar> createState() => _MonthCalendarState();
+}
+
+class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveClientMixin {
+  String? _lastCacheKey;
+  List<DateTime> _days = const [];
+  List<List<DateTime>> _visibleWeeks = const [];
+  List<Event> _monthEvents = const [];
+  final Map<int, List<_WeekEventLayout>> _weekLayouts = {};
+  bool _showEventBars = true;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void didUpdateWidget(covariant MonthCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentMonth.year != widget.currentMonth.year || oldWidget.currentMonth.month != widget.currentMonth.month) {
+      _showEventBars = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _showEventBars = true;
+        });
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final days = CalendarDateUtils.getCalendarDays(currentMonth);
+    super.build(context);
     // Use select to only rebuild when the events list changes
-    final allEvents = context.select<EventProvider, List<Event>>(
-      (p) => p.events,
-    );
+    final allEvents = context.select<EventProvider, List<Event>>((p) => p.events);
+    final eventsVersion = context.select<EventProvider, int>((p) => p.eventsVersion);
 
-    // Filter events for this specific month instance
-    final events = _getEventsForMonth(allEvents, currentMonth);
+    _ensureCache(allEvents, eventsVersion);
 
     // MonthCalendar now only renders the grid content
-    return _buildCalendarGrid(days, events);
+    return _buildCalendarGrid(_visibleWeeks, _monthEvents);
+  }
+
+  void _ensureCache(List<Event> allEvents, int eventsVersion) {
+    final cacheKey = MonthCalendar._cacheKey(widget.currentMonth, eventsVersion);
+    if (_lastCacheKey == cacheKey) return;
+
+    final cached = MonthCalendar._cache[cacheKey];
+    if (cached != null) {
+      _lastCacheKey = cacheKey;
+      _days = cached.days;
+      _visibleWeeks = cached.visibleWeeks;
+      _monthEvents = cached.monthEvents;
+      _weekLayouts
+        ..clear()
+        ..addAll(cached.weekLayouts);
+      return;
+    }
+
+    _lastCacheKey = cacheKey;
+    _days = CalendarDateUtils.getCalendarDays(widget.currentMonth);
+    _visibleWeeks = _buildVisibleWeeks(_days);
+    _monthEvents = _getEventsForMonth(allEvents, widget.currentMonth);
+    _weekLayouts.clear();
+
+    for (var i = 0; i < _visibleWeeks.length; i++) {
+      _weekLayouts[i] = _layoutEventsForWeek(_visibleWeeks[i], _monthEvents);
+    }
+
+    MonthCalendar._cache[cacheKey] = _MonthCache(days: _days, visibleWeeks: _visibleWeeks, monthEvents: _monthEvents, weekLayouts: Map<int, List<_WeekEventLayout>>.from(_weekLayouts));
   }
 
   // Local helper to filter events, avoiding dependency on Provider instance methods
   List<Event> _getEventsForMonth(List<Event> allEvents, DateTime month) {
+    return _getEventsForMonthStatic(allEvents, month);
+  }
+
+  static List<Event> _getEventsForMonthStatic(List<Event> allEvents, DateTime month) {
     final firstDay = CalendarDateUtils.getFirstDayOfMonth(month);
     final lastDay = CalendarDateUtils.getLastDayOfMonth(month);
 
@@ -47,70 +122,52 @@ class MonthCalendar extends StatelessWidget {
       final startOnly = CalendarDateUtils.dateOnly(event.startDate);
       final endOnly = CalendarDateUtils.dateOnly(event.endDate);
 
-      // 事件與月份有交集
       return !endOnly.isBefore(firstDay) && !startOnly.isAfter(lastDay);
     }).toList();
   }
 
-  Widget _buildCalendarGrid(List<DateTime> days, List<Event> events) {
-    // 將日期分成 6 週，但過濾掉完全不屬於當前月份的週
+  List<List<DateTime>> _buildVisibleWeeks(List<DateTime> days) {
+    return _buildVisibleWeeksStatic(days, widget.currentMonth);
+  }
+
+  static List<List<DateTime>> _buildVisibleWeeksStatic(List<DateTime> days, DateTime month) {
     final allWeeks = <List<DateTime>>[];
     for (var i = 0; i < days.length; i += 7) {
       allWeeks.add(days.sublist(i, i + 7));
     }
 
-    final visibleWeeks = allWeeks.where((week) {
-      return week.any(
-        (date) => CalendarDateUtils.isInMonth(date, currentMonth),
-      );
+    return allWeeks.where((week) {
+      return week.any((date) => CalendarDateUtils.isInMonth(date, month));
     }).toList();
+  }
 
+  Widget _buildCalendarGrid(List<List<DateTime>> visibleWeeks, List<Event> events) {
     // 計算動態高度
     // 使用 centralized layout constants
     final targetTotalHeight = CalendarLayout.monthGridTargetHeight;
     // 減去分隔線的高度 (每週之間有一條線，共 visibleWeeks.length - 1 條)
     // 確保總高度 (Cells + Dividers) 準確等於 targetTotalHeight
     final totalDividerHeight = (visibleWeeks.length - 1) * 1.0;
-    final cellHeight =
-        (targetTotalHeight - totalDividerHeight) / visibleWeeks.length;
+    final cellHeight = (targetTotalHeight - totalDividerHeight) / visibleWeeks.length;
 
     // 計算動態最大事件行數
     // cellHeight = dayLabelHeight + events
     final availableEventSpace = cellHeight - CalendarLayout.dayLabelHeight;
-    final maxEventRows =
-        (availableEventSpace /
-                (CalendarLayout.eventRowHeight + CalendarLayout.eventSpacing))
-            .floor();
+    final maxEventRows = (availableEventSpace / (CalendarLayout.eventRowHeight + CalendarLayout.eventSpacing)).floor();
 
     // 構建帶有分隔線的週列表
     final children = <Widget>[];
     for (var i = 0; i < visibleWeeks.length; i++) {
-      children.add(
-        _buildWeekRow(visibleWeeks[i], events, cellHeight, maxEventRows),
-      );
+      children.add(_buildWeekRow(visibleWeeks[i], _weekLayouts[i] ?? const [], cellHeight, maxEventRows));
       if (i < visibleWeeks.length - 1) {
-        children.add(
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: AppColors.divider.withValues(alpha: 0.3),
-          ),
-        );
+        children.add(Divider(height: 1, thickness: 1, color: AppColors.divider.withValues(alpha: 0.3)));
       }
     }
 
     return Column(children: children);
   }
 
-  Widget _buildWeekRow(
-    List<DateTime> week,
-    List<Event> allEvents,
-    double cellHeight,
-    int maxRows,
-  ) {
-    // 計算並佈局這一週的事件
-    final layoutEvents = _layoutEventsForWeek(week, allEvents);
-
+  Widget _buildWeekRow(List<DateTime> week, List<_WeekEventLayout> layoutEvents, double cellHeight, int maxRows) {
     const baseCellHeight = CalendarLayout.dayLabelHeight;
     const eventRowHeight = CalendarLayout.eventRowHeight;
     const eventSpacing = CalendarLayout.eventSpacing;
@@ -130,56 +187,40 @@ class MonthCalendar extends StatelessWidget {
               return Expanded(
                 child: DayCell(
                   date: date,
-                  currentMonth: currentMonth,
+                  currentMonth: widget.currentMonth,
                   isToday: isToday,
                   isSelected: false, // 永遠不選中，由 Overlay 處理
                   eventColors: const [],
-                  onTap: () => onDateSelected?.call(date),
+                  onTap: () => widget.onDateSelected?.call(date),
                 ),
               );
             }).toList(),
           ),
           // 多日事件條 (渲染 layer)
-          Positioned.fill(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final cellWidth = constraints.maxWidth / 7;
-                return Stack(
-                  children: _buildEventBars(
-                    week,
-                    layoutEvents,
-                    baseCellHeight,
-                    eventRowHeight,
-                    eventSpacing,
-                    cellWidth,
-                    maxRows,
-                  ),
-                );
-              },
+          if (_showEventBars)
+            Positioned.fill(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final cellWidth = constraints.maxWidth / 7;
+                  return Stack(children: _buildEventBars(week, layoutEvents, baseCellHeight, eventRowHeight, eventSpacing, cellWidth, maxRows));
+                },
+              ),
             ),
-          ),
           // 選中框覆蓋層 (最上層，確保不被事件遮擋)
           IgnorePointer(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: week.map((date) {
-                final isSelected =
-                    selectedDate != null &&
-                    CalendarDateUtils.isSameDay(date, selectedDate!);
+                final isSelected = widget.selectedDate != null && CalendarDateUtils.isSameDay(date, widget.selectedDate!);
 
                 if (!isSelected) return const Expanded(child: SizedBox());
 
                 return Expanded(
                   child: Container(
-                    margin: const EdgeInsets.all(
-                      1,
-                    ), // Match DayCell margin (1 for compact)
+                    margin: const EdgeInsets.all(1), // Match DayCell margin (1 for compact)
                     // Note: DayCell code says: margin: EdgeInsets.all(isCompact ? 1 : 1),
                     decoration: BoxDecoration(
-                      border: Border.all(
-                        color: AppColors.textSecondary,
-                        width: 1.5,
-                      ),
+                      border: Border.all(color: AppColors.textSecondary, width: 1.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
@@ -192,83 +233,58 @@ class MonthCalendar extends StatelessWidget {
     );
   }
 
-  List<_WeekEventLayout> _layoutEventsForWeek(
-    List<DateTime> week,
-    List<Event> allEvents,
-  ) {
-    // 確保全部轉為 Local 時間並只取日期部分，解決時區問題
+  List<_WeekEventLayout> _layoutEventsForWeek(List<DateTime> week, List<Event> allEvents) {
+    return _layoutEventsForWeekStatic(week, allEvents);
+  }
+
+  static List<_WeekEventLayout> _layoutEventsForWeekStatic(List<DateTime> week, List<Event> allEvents) {
     final weekStart = CalendarDateUtils.dateOnly(week.first);
     final weekEnd = CalendarDateUtils.dateOnly(week.last);
     final weekEvents = <_WeekEventData>[];
 
-    // 1. 篩選出本週有關的事件
     for (final event in allEvents) {
-      // 轉換為本地時間再取日期，避免 UTC 跨日問題
       final eventStartLocal = event.startDate.toLocal();
       final eventEndLocal = event.endDate.toLocal();
 
       final eventStart = CalendarDateUtils.dateOnly(eventStartLocal);
       final eventEnd = CalendarDateUtils.dateOnly(eventEndLocal);
 
-      // 檢查交集: eventEnd >= weekStart AND eventStart <= weekEnd
-      // 使用 compareTo 確保比較準確
-      if (eventEnd.compareTo(weekStart) >= 0 &&
-          eventStart.compareTo(weekEnd) <= 0) {
-        // 計算在本週的顯示範圍
-        // 使用 compareTo 判斷 displayEnd
-        final displayStart = eventStart.compareTo(weekStart) < 0
-            ? weekStart
-            : eventStart;
+      if (eventEnd.compareTo(weekStart) >= 0 && eventStart.compareTo(weekEnd) <= 0) {
+        final displayStart = eventStart.compareTo(weekStart) < 0 ? weekStart : eventStart;
         final displayEnd = eventEnd.compareTo(weekEnd) > 0 ? weekEnd : eventEnd;
 
         final startOffset = displayStart.difference(weekStart).inDays;
         var span = displayEnd.difference(displayStart).inDays + 1;
 
-        // 安全檢查：確保 span 不會超出當週剩餘天數
         if (startOffset + span > 7) {
           span = 7 - startOffset;
         }
 
-        weekEvents.add(
-          _WeekEventData(
-            event: event,
-            startOffset: startOffset,
-            span: span,
-            isStart: CalendarDateUtils.isSameDay(eventStart, displayStart),
-            isEnd: CalendarDateUtils.isSameDay(eventEnd, displayEnd),
-            sortKey: startOffset * 100 - span,
-          ),
-        );
+        weekEvents.add(_WeekEventData(event: event, startOffset: startOffset, span: span, isStart: CalendarDateUtils.isSameDay(eventStart, displayStart), isEnd: CalendarDateUtils.isSameDay(eventEnd, displayEnd), sortKey: startOffset * 100 - span));
       }
     }
 
-    // 2. 排序
     weekEvents.sort((a, b) {
       if (a.startOffset != b.startOffset) {
         return a.startOffset.compareTo(b.startOffset);
       }
-      return b.span.compareTo(a.span); // 長的在前 (span 越大越前)
+      return b.span.compareTo(a.span);
     });
 
-    // 3. 分配 Lane (Packing)
     final layout = <_WeekEventLayout>[];
-    // lanes[i] 紀錄第 i 行最後被占用的索引位置 (0~6)
-    // 例如 lanes[0] = 2 表示第 0 行已經占用到了星期二 (index 2)，下一個事件必須從 index 3 開始才能放這行
     final lanes = <int>[];
 
     for (final item in weekEvents) {
       int assignedLane = -1;
 
-      // 嘗試找到一個可以放入的 lane
       for (int i = 0; i < lanes.length; i++) {
         if (lanes[i] < item.startOffset) {
           assignedLane = i;
-          lanes[i] = item.startOffset + item.span - 1; // 更新佔用截止
+          lanes[i] = item.startOffset + item.span - 1;
           break;
         }
       }
 
-      // 如果沒找到，開啟新 lane
       if (assignedLane == -1) {
         assignedLane = lanes.length;
         lanes.add(item.startOffset + item.span - 1);
@@ -280,15 +296,7 @@ class MonthCalendar extends StatelessWidget {
     return layout;
   }
 
-  List<Widget> _buildEventBars(
-    List<DateTime> week,
-    List<_WeekEventLayout> layouts,
-    double topOffset,
-    double rowHeight,
-    double spacing,
-    double cellWidth,
-    int maxRows,
-  ) {
+  List<Widget> _buildEventBars(List<DateTime> week, List<_WeekEventLayout> layouts, double topOffset, double rowHeight, double spacing, double cellWidth, int maxRows) {
     final List<Widget> bars = [];
     // maxRows passed from arguments
 
@@ -304,37 +312,19 @@ class MonthCalendar extends StatelessWidget {
     }
 
     // 2. 構建事件條 Widget 的輔助函數
-    Widget createEventBar(
-      _WeekEventData data,
-      double width,
-      bool forceStart,
-      bool forceEnd,
-    ) {
+    Widget createEventBar(_WeekEventData data, double width, bool forceStart, bool forceEnd) {
       return IgnorePointer(
         child: Container(
           alignment: Alignment.centerLeft,
           decoration: BoxDecoration(
-            color:
-                AppColors.eventColors[data.event.colorIndex %
-                    AppColors.eventColors.length],
-            borderRadius: BorderRadius.horizontal(
-              left: (data.isStart || forceStart)
-                  ? const Radius.circular(4)
-                  : Radius.zero,
-              right: (data.isEnd || forceEnd)
-                  ? const Radius.circular(4)
-                  : Radius.zero,
-            ),
+            color: AppColors.eventColors[data.event.colorIndex % AppColors.eventColors.length],
+            borderRadius: BorderRadius.horizontal(left: (data.isStart || forceStart) ? const Radius.circular(4) : Radius.zero, right: (data.isEnd || forceEnd) ? const Radius.circular(4) : Radius.zero),
             // BoxShadow removed for performance optimization during swiping
           ),
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
             data.event.title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
@@ -357,15 +347,7 @@ class MonthCalendar extends StatelessWidget {
         final leftOffset = (cellWidth * item.data.startOffset) + 2;
         final topPos = topOffset + (item.lane * (rowHeight + spacing));
 
-        bars.add(
-          Positioned(
-            top: topPos,
-            left: leftOffset,
-            width: barWidth,
-            height: rowHeight,
-            child: createEventBar(item.data, barWidth, false, false),
-          ),
-        );
+        bars.add(Positioned(top: topPos, left: leftOffset, width: barWidth, height: rowHeight, child: createEventBar(item.data, barWidth, false, false)));
       } else if (item.lane == overflowLane) {
         // 如果是在最後一行 (overflowLane)，需要檢查每一天是否 "溢出"
         // 只有在當天總事件數 <= maxRows 時，才顯示該事件的該天部分
@@ -415,21 +397,7 @@ class MonthCalendar extends StatelessWidget {
           final leftOffset = (cellWidth * currentStart) + 2;
           final topPos = topOffset + (item.lane * (rowHeight + spacing));
 
-          bars.add(
-            Positioned(
-              top: topPos,
-              left: leftOffset,
-              width: barWidth,
-              height: rowHeight,
-              child: createEventBar(
-                item.data,
-                barWidth,
-                currentStart == item.data.startOffset,
-                currentStart + currentLength ==
-                    item.data.startOffset + item.data.span,
-              ),
-            ),
-          );
+          bars.add(Positioned(top: topPos, left: leftOffset, width: barWidth, height: rowHeight, child: createEventBar(item.data, barWidth, currentStart == item.data.startOffset, currentStart + currentLength == item.data.startOffset + item.data.span)));
         }
       }
     }
@@ -454,11 +422,7 @@ class MonthCalendar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
                 '+$count',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -470,6 +434,15 @@ class MonthCalendar extends StatelessWidget {
   }
 }
 
+class _MonthCache {
+  final List<DateTime> days;
+  final List<List<DateTime>> visibleWeeks;
+  final List<Event> monthEvents;
+  final Map<int, List<_WeekEventLayout>> weekLayouts;
+
+  _MonthCache({required this.days, required this.visibleWeeks, required this.monthEvents, required this.weekLayouts});
+}
+
 class _WeekEventData {
   final Event event;
   final int startOffset;
@@ -478,14 +451,7 @@ class _WeekEventData {
   final bool isEnd;
   final int sortKey;
 
-  _WeekEventData({
-    required this.event,
-    required this.startOffset,
-    required this.span,
-    required this.isStart,
-    required this.isEnd,
-    required this.sortKey,
-  });
+  _WeekEventData({required this.event, required this.startOffset, required this.span, required this.isStart, required this.isEnd, required this.sortKey});
 }
 
 class _WeekEventLayout {

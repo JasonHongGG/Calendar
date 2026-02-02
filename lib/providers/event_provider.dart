@@ -13,10 +13,12 @@ class EventProvider extends ChangeNotifier {
   List<Event> _events = [];
   DateTime _selectedDate = DateTime.now();
   DateTime _currentMonth = DateTime.now();
+  int _eventsVersion = 0;
 
   final Uuid _uuid = const Uuid();
 
   List<Event> get events => _events;
+  int get eventsVersion => _eventsVersion;
   DateTime get selectedDate => _selectedDate;
   DateTime get currentMonth => _currentMonth;
 
@@ -37,6 +39,7 @@ class EventProvider extends ChangeNotifier {
     _events = _eventsBox?.values.toList() ?? [];
     // 按開始日期排序
     _events.sort((a, b) => a.startDate.compareTo(b.startDate));
+    _eventsVersion++;
     notifyListeners();
   }
 

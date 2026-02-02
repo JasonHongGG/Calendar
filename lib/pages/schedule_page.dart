@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
 import '../models/event.dart';
 import '../providers/event_provider.dart';
@@ -21,14 +20,6 @@ class SchedulePage extends StatefulWidget {
 }
 
 class _SchedulePageState extends State<SchedulePage> {
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     // Top-level: No watch
@@ -39,12 +30,9 @@ class _SchedulePageState extends State<SchedulePage> {
           children: [
             // 迷你月曆 (Only rebuilds when currentMonth or selectedDate changes)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimens.spacingNormal,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: AppDimens.spacingNormal),
               child: Selector<EventProvider, (DateTime, DateTime)>(
-                selector: (context, provider) =>
-                    (provider.currentMonth, provider.selectedDate),
+                selector: (context, provider) => (provider.currentMonth, provider.selectedDate),
                 builder: (context, data, child) {
                   final currentMonth = data.$1;
                   final selectedDate = data.$2;
@@ -72,8 +60,7 @@ class _SchedulePageState extends State<SchedulePage> {
             // 事件列表 (Only rebuilds when selectedDate or events list changes)
             Expanded(
               child: Selector<EventProvider, (DateTime, List<Event>)>(
-                selector: (context, provider) =>
-                    (provider.selectedDate, provider.events),
+                selector: (context, provider) => (provider.selectedDate, provider.events),
                 shouldRebuild: (prev, next) {
                   // Rebuild only if selectedDate changed or events list reference changed
                   // (assuming immutable list or provider notifies on list change)
@@ -95,11 +82,7 @@ class _SchedulePageState extends State<SchedulePage> {
         ),
       ),
       // FAB (Selector for selectedDate)
-      floatingActionButton: Selector<EventProvider, DateTime>(
-        selector: (context, p) => p.selectedDate,
-        builder: (context, selectedDate, child) =>
-            _buildFAB(context, selectedDate),
-      ),
+      floatingActionButton: Selector<EventProvider, DateTime>(selector: (context, p) => p.selectedDate, builder: (context, selectedDate, child) => _buildFAB(context, selectedDate)),
     );
   }
 
@@ -117,31 +100,20 @@ class _SchedulePageState extends State<SchedulePage> {
   Widget _buildEventsList(Map<DateTime, List<Event>> groupedEvents) {
     final entries = groupedEvents.entries.toList();
 
-    return AnimationLimiter(
-      child: ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(
-          AppDimens.spacingNormal,
-          AppDimens.spacingNormal,
-          AppDimens.spacingNormal,
-          100, // Bottom padding for FAB
-        ),
-        itemCount: entries.length,
-        itemBuilder: (context, index) {
-          final entry = entries[index];
-          final date = entry.key;
-          final events = entry.value;
-
-          return AnimationConfiguration.staggeredList(
-            position: index,
-            duration: const Duration(milliseconds: 375),
-            child: SlideAnimation(
-              verticalOffset: 30.0,
-              child: FadeInAnimation(child: _buildDateSection(date, events)),
-            ),
-          );
-        },
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(
+        AppDimens.spacingNormal,
+        AppDimens.spacingNormal,
+        AppDimens.spacingNormal,
+        100, // Bottom padding for FAB
       ),
+      itemCount: entries.length,
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        final date = entry.key;
+        final events = entry.value;
+        return _buildDateSection(date, events);
+      },
     );
   }
 
@@ -187,10 +159,7 @@ class _SchedulePageState extends State<SchedulePage> {
             const SizedBox(height: AppDimens.spacingTiny),
             Text(
               CalendarDateUtils.formatWeekday(date),
-              style: AppTextStyles.bodyNormal.copyWith(
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
+              style: AppTextStyles.bodyNormal.copyWith(fontWeight: FontWeight.w500, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -202,22 +171,11 @@ class _SchedulePageState extends State<SchedulePage> {
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(AppDimens.radiusXLarge),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.gradientStart.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: AppColors.gradientStart.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
             ),
             child: const Text(
               'Today',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
             ),
           ),
       ],
@@ -232,25 +190,13 @@ class _SchedulePageState extends State<SchedulePage> {
         decoration: BoxDecoration(
           color: AppColors.background,
           borderRadius: BorderRadius.circular(AppDimens.radiusMedium),
-          border: Border.all(
-            color: AppColors.dividerLight,
-            style: BorderStyle.solid,
-          ),
+          border: Border.all(color: AppColors.dividerLight, style: BorderStyle.solid),
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.add_circle_outline_rounded,
-              color: AppColors.textTertiary,
-              size: AppDimens.iconMedium,
-            ),
+            Icon(Icons.add_circle_outline_rounded, color: AppColors.textTertiary, size: AppDimens.iconMedium),
             const SizedBox(width: 10),
-            Text(
-              '尚未規劃活動，點擊 + 新增事件',
-              style: AppTextStyles.bodyNormal.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
+            Text('尚未規劃活動，點擊 + 新增事件', style: AppTextStyles.bodyNormal.copyWith(color: AppColors.textSecondary)),
           ],
         ),
       ),
@@ -264,17 +210,10 @@ class _SchedulePageState extends State<SchedulePage> {
         decoration: BoxDecoration(
           gradient: AppColors.primaryGradient,
           shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.gradientStart.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: AppColors.gradientStart.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6))],
         ),
         child: FloatingActionButton(
-          onPressed: () =>
-              showAddEventSheet(context, initialDate: selectedDate),
+          onPressed: () => showAddEventSheet(context, initialDate: selectedDate),
           backgroundColor: Colors.transparent,
           elevation: 0,
           child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
