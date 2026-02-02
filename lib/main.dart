@@ -3,24 +3,21 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'providers/event_provider.dart';
+import 'providers/settings_provider.dart';
 import 'pages/splash_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set System UI
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark, systemNavigationBarColor: Colors.white, systemNavigationBarIconBrightness: Brightness.dark));
 
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => EventProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => EventProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+      ],
       child: const CalendarApp(),
     ),
   );
@@ -31,11 +28,6 @@ class CalendarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Calendar',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const SplashPage(),
-    );
+    return MaterialApp(title: 'Calendar', debugShowCheckedModeBanner: false, theme: AppTheme.lightTheme, home: const SplashPage());
   }
 }

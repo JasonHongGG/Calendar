@@ -87,6 +87,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
     _reminderTimeNotifier.dispose();
     super.dispose();
   }
+
   // 當我們更改開始日期時，如果提醒時間還沒被手動設定過（或者我們希望保持同步），需要更新預設值
   // 這裡簡單起見，如果提醒時間早於新的開始日期，或者用戶還沒啟用提醒，我們可以更新它
   void _updateDefaultReminderTime() {
@@ -105,11 +106,19 @@ class _AddEventSheetState extends State<AddEventSheet> {
   Widget build(BuildContext context) {
     // 計算內容高度，盡量讓它適應一頁
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.92,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 40, offset: Offset(0, -10))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 40,
+            offset: Offset(0, -10),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -122,7 +131,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(color: AppColors.textTertiary.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(100)),
+                decoration: BoxDecoration(
+                  color: AppColors.textTertiary.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(100),
+                ),
               ),
             ),
           ),
@@ -143,7 +155,12 @@ class _AddEventSheetState extends State<AddEventSheet> {
                       children: [
                         Text(
                           _isEditing ? '編輯事件' : '新增事件',
-                          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary, letterSpacing: -0.5),
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            letterSpacing: -0.5,
+                          ),
                         ),
                         Row(
                           children: [
@@ -151,8 +168,17 @@ class _AddEventSheetState extends State<AddEventSheet> {
                             if (_isEditing)
                               IconButton(
                                 onPressed: _deleteEvent,
-                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 28),
-                                style: IconButton.styleFrom(backgroundColor: Colors.red.withValues(alpha: 0.1), padding: const EdgeInsets.all(8)),
+                                icon: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: Colors.red,
+                                  size: 28,
+                                ),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.red.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  padding: const EdgeInsets.all(8),
+                                ),
                               ),
                           ],
                         ),
@@ -189,14 +215,25 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
     return IconButton(
       onPressed: _showDescriptionModal,
-      icon: Icon(hasNote ? Icons.sticky_note_2_rounded : Icons.sticky_note_2_outlined, color: hasNote ? AppColors.gradientStart : AppColors.textTertiary, size: 26),
-      style: IconButton.styleFrom(backgroundColor: hasNote ? AppColors.gradientStart.withValues(alpha: 0.12) : AppColors.background, padding: const EdgeInsets.all(8)),
+      icon: Icon(
+        hasNote ? Icons.sticky_note_2_rounded : Icons.sticky_note_2_outlined,
+        color: hasNote ? AppColors.gradientStart : AppColors.textTertiary,
+        size: 26,
+      ),
+      style: IconButton.styleFrom(
+        backgroundColor: hasNote
+            ? AppColors.gradientStart.withValues(alpha: 0.12)
+            : AppColors.background,
+        padding: const EdgeInsets.all(8),
+      ),
       tooltip: '備註',
     );
   }
 
   void _showDescriptionModal() {
-    final tempController = TextEditingController(text: _descriptionController.text);
+    final tempController = TextEditingController(
+      text: _descriptionController.text,
+    );
 
     showModalBottomSheet(
       context: context,
@@ -214,7 +251,13 @@ class _AddEventSheetState extends State<AddEventSheet> {
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 30, offset: Offset(0, -10))],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 30,
+                  offset: Offset(0, -10),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -224,12 +267,17 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   children: [
                     const Text(
                       '備註',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                     const Spacer(),
                     TextButton(
                       onPressed: () {
-                        _descriptionController.text = tempController.text.trim();
+                        _descriptionController.text = tempController.text
+                            .trim();
                         setState(() {});
                         Navigator.pop(context);
                       },
@@ -242,18 +290,31 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   decoration: BoxDecoration(
                     color: AppColors.background.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
+                    border: Border.all(
+                      color: AppColors.divider.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: TextField(
                     controller: tempController,
                     maxLines: 6,
                     minLines: 4,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
                     decoration: const InputDecoration(
                       hintText: '輸入備註內容...',
-                      hintStyle: TextStyle(color: AppColors.textTertiary, fontWeight: FontWeight.normal, fontSize: 14),
+                      hintStyle: TextStyle(
+                        color: AppColors.textTertiary,
+                        fontWeight: FontWeight.normal,
+                        fontSize: 14,
+                      ),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                       isDense: true,
                     ),
                     textInputAction: TextInputAction.newline,
@@ -293,9 +354,19 @@ class _AddEventSheetState extends State<AddEventSheet> {
 
     final provider = Provider.of<EventProvider>(context, listen: false);
 
-    final startDateTime = DateTime(_startDate.year, _startDate.month, _startDate.day);
+    final startDateTime = DateTime(
+      _startDate.year,
+      _startDate.month,
+      _startDate.day,
+    );
 
-    final endDateTime = DateTime(_endDate.year, _endDate.month, _endDate.day, 23, 59);
+    final endDateTime = DateTime(
+      _endDate.year,
+      _endDate.month,
+      _endDate.day,
+      23,
+      59,
+    );
 
     int finalColorIndex;
     if (_selectedColorIndex == -1) {
@@ -306,27 +377,56 @@ class _AddEventSheetState extends State<AddEventSheet> {
     }
 
     final reminderToSave = _reminderEnabledNotifier.value
-      ? _reminderTimeNotifier.value?.toLocal()
-      : null;
+        ? _reminderTimeNotifier.value?.toLocal()
+        : null;
     if (_reminderEnabledNotifier.value && reminderToSave != null) {
       final now = DateTime.now();
       if (!reminderToSave.isAfter(now)) {
         if (context.mounted) {
-          NotificationOverlay.show(context: context, message: '提醒時間需晚於現在，請重新設定提醒時間', type: NotificationType.error);
+          NotificationOverlay.show(
+            context: context,
+            message: '提醒時間需晚於現在，請重新設定提醒時間',
+            type: NotificationType.error,
+          );
         }
         return;
       }
     }
 
     if (_isEditing) {
-      final updatedEvent = widget.editEvent!.copyWith(title: _titleController.text.trim(), startDate: startDateTime, endDate: endDateTime, isAllDay: true, colorIndex: finalColorIndex, description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(), reminderTime: reminderToSave);
+      final updatedEvent = widget.editEvent!.copyWith(
+        title: _titleController.text.trim(),
+        startDate: startDateTime,
+        endDate: endDateTime,
+        isAllDay: true,
+        colorIndex: finalColorIndex,
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        reminderTime: reminderToSave,
+      );
       provider.updateEvent(updatedEvent);
     } else {
-      provider.addEvent(title: _titleController.text.trim(), startDate: startDateTime, endDate: endDateTime, isAllDay: true, colorIndex: finalColorIndex, description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(), reminderTime: reminderToSave);
+      provider.addEvent(
+        title: _titleController.text.trim(),
+        startDate: startDateTime,
+        endDate: endDateTime,
+        isAllDay: true,
+        colorIndex: finalColorIndex,
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        reminderTime: reminderToSave,
+      );
     }
 
     if (context.mounted && reminderToSave != null) {
-      NotificationOverlay.show(context: context, message: '已設定提醒：${_titleController.text.trim()}（${CalendarDateUtils.formatYearMonthDaySlash(reminderToSave)} ${CalendarDateUtils.formatTime(reminderToSave)}）', type: NotificationType.success);
+      NotificationOverlay.show(
+        context: context,
+        message:
+            '已設定提醒：${_titleController.text.trim()}（${CalendarDateUtils.formatYearMonthDaySlash(reminderToSave)} ${CalendarDateUtils.formatTime(reminderToSave)}）',
+        type: NotificationType.success,
+      );
     }
 
     Navigator.pop(context);
@@ -341,7 +441,17 @@ class _AddEventSheetState extends State<AddEventSheet> {
       currentColor = AppColors.eventColors[_selectedColorIndex];
     }
 
-    const rainbowGradient = SweepGradient(colors: [Colors.red, Colors.orange, Colors.yellow, Colors.green, Colors.blue, Colors.purple, Colors.red]);
+    const rainbowGradient = SweepGradient(
+      colors: [
+        Colors.red,
+        Colors.orange,
+        Colors.yellow,
+        Colors.green,
+        Colors.blue,
+        Colors.purple,
+        Colors.red,
+      ],
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -364,10 +474,38 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _selectedColorIndex == -1 ? null : currentColor,
-                    gradient: _selectedColorIndex == -1 ? rainbowGradient : null,
-                    boxShadow: [BoxShadow(color: (_selectedColorIndex == -1 ? AppColors.gradientStart : currentColor).withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 2))],
+                    gradient: _selectedColorIndex == -1
+                        ? rainbowGradient
+                        : null,
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                            (_selectedColorIndex == -1
+                                    ? AppColors.gradientStart
+                                    : currentColor)
+                                .withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: _selectedColorIndex == -1 ? const Icon(Icons.shuffle_rounded, color: Colors.white, size: 16) : (_isColorPickerExpanded ? const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white, size: 20) : const Icon(Icons.edit_rounded, color: Colors.white, size: 16)),
+                  child: _selectedColorIndex == -1
+                      ? const Icon(
+                          Icons.shuffle_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        )
+                      : (_isColorPickerExpanded
+                            ? const Icon(
+                                Icons.keyboard_arrow_up_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              )
+                            : const Icon(
+                                Icons.edit_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              )),
                 ),
               ),
 
@@ -382,15 +520,28 @@ class _AddEventSheetState extends State<AddEventSheet> {
               Expanded(
                 child: TextFormField(
                   controller: _titleController,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
                   decoration: const InputDecoration(
                     hintText: '輸入標題...',
-                    hintStyle: TextStyle(color: AppColors.textTertiary, fontWeight: FontWeight.normal, fontSize: 15),
+                    hintStyle: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.normal,
+                      fontSize: 15,
+                    ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
                     isDense: true,
                   ),
-                  validator: (value) => (value == null || value.trim().isEmpty) ? '請輸入事件名稱' : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? '請輸入事件名稱'
+                      : null,
                   textInputAction: TextInputAction.done,
                 ),
               ),
@@ -401,8 +552,13 @@ class _AddEventSheetState extends State<AddEventSheet> {
         // 可展開的顏色選擇列
         AnimatedCrossFade(
           firstChild: const SizedBox(height: 0),
-          secondChild: Padding(padding: const EdgeInsets.only(top: 12), child: _buildColorSelectionRow()),
-          crossFadeState: _isColorPickerExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          secondChild: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: _buildColorSelectionRow(),
+          ),
+          crossFadeState: _isColorPickerExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
           duration: const Duration(milliseconds: 300),
           sizeCurve: Curves.easeOutBack,
         ),
@@ -423,8 +579,16 @@ class _AddEventSheetState extends State<AddEventSheet> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.divider.withValues(alpha: 0.5)),
-              boxShadow: [BoxShadow(color: AppColors.shadowLight, blurRadius: 16, offset: const Offset(0, 4))],
+              border: Border.all(
+                color: AppColors.divider.withValues(alpha: 0.5),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadowLight,
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -445,14 +609,28 @@ class _AddEventSheetState extends State<AddEventSheet> {
                   constraints: const BoxConstraints(minWidth: 60),
                   child: Column(
                     children: [
-                      Icon(Icons.arrow_forward_rounded, color: AppColors.textTertiary.withValues(alpha: 0.5), size: 20),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppColors.textTertiary.withValues(alpha: 0.5),
+                        size: 20,
+                      ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(color: AppColors.gradientStart.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.gradientStart.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         child: Text(
                           '$duration 天',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.gradientStart),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.gradientStart,
+                          ),
                         ),
                       ),
                     ],
@@ -478,7 +656,13 @@ class _AddEventSheetState extends State<AddEventSheet> {
     );
   }
 
-  Widget _buildDateBlock({required DateTime date, required String label, required IconData icon, required Color color, required CrossAxisAlignment alignment}) {
+  Widget _buildDateBlock({
+    required DateTime date,
+    required String label,
+    required IconData icon,
+    required Color color,
+    required CrossAxisAlignment alignment,
+  }) {
     // 確保內容相對於所在區塊對齊
     return Column(
       crossAxisAlignment: alignment,
@@ -490,19 +674,32 @@ class _AddEventSheetState extends State<AddEventSheet> {
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 6),
         Text(
           CalendarDateUtils.formatMonthDaySlash(date),
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.5,
+          ),
         ),
         const SizedBox(height: 2),
         Text(
           '${CalendarDateUtils.formatYear(date)} • ${CalendarDateUtils.formatWeekday(date)}',
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textTertiary),
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textTertiary,
+          ),
         ),
       ],
     );
@@ -519,21 +716,43 @@ class _AddEventSheetState extends State<AddEventSheet> {
         separatorBuilder: (context, index) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           if (index == 0) {
-            return _buildColorItem(index: -1, color: Colors.transparent, isRandom: true);
+            return _buildColorItem(
+              index: -1,
+              color: Colors.transparent,
+              isRandom: true,
+            );
           }
           final colorIndex = index - 1;
-          return _buildColorItem(index: colorIndex, color: AppColors.eventColors[colorIndex], isRandom: false);
+          return _buildColorItem(
+            index: colorIndex,
+            color: AppColors.eventColors[colorIndex],
+            isRandom: false,
+          );
         },
       ),
     );
   }
 
-  Widget _buildColorItem({required int index, required Color color, required bool isRandom}) {
+  Widget _buildColorItem({
+    required int index,
+    required Color color,
+    required bool isRandom,
+  }) {
     final isSelected = _selectedColorIndex == index;
     final size = isSelected ? 48.0 : 36.0;
 
     // 定義彩虹漸層
-    const rainbowGradient = SweepGradient(colors: [Colors.red, Colors.orange, Colors.yellow, Colors.green, Colors.blue, Colors.purple, Colors.red]);
+    const rainbowGradient = SweepGradient(
+      colors: [
+        Colors.red,
+        Colors.orange,
+        Colors.yellow,
+        Colors.green,
+        Colors.blue,
+        Colors.purple,
+        Colors.red,
+      ],
+    );
 
     return GestureDetector(
       onTap: () => setState(() => _selectedColorIndex = index),
@@ -550,7 +769,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
                 child: Container(
                   width: size,
                   height: size,
-                  decoration: const BoxDecoration(shape: BoxShape.circle, gradient: rainbowGradient),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: rainbowGradient,
+                  ),
                 ),
               ),
             ),
@@ -566,9 +788,31 @@ class _AddEventSheetState extends State<AddEventSheet> {
               color: isRandom ? null : color,
               shape: BoxShape.circle,
               // 普通顏色的陰影邏輯維持不變
-              boxShadow: (isSelected && !isRandom) ? [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 4))] : null,
+              boxShadow: (isSelected && !isRandom)
+                  ? [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
             ),
-            child: isSelected && !isRandom ? const Icon(Icons.check_rounded, color: Colors.white, size: 20) : (isRandom && isSelected ? const Icon(Icons.shuffle_rounded, color: Colors.white, size: 20) : (isRandom ? const Icon(Icons.shuffle_rounded, color: Colors.white70, size: 16) : null)),
+            child: isSelected && !isRandom
+                ? const Icon(Icons.check_rounded, color: Colors.white, size: 20)
+                : (isRandom && isSelected
+                      ? const Icon(
+                          Icons.shuffle_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        )
+                      : (isRandom
+                            ? const Icon(
+                                Icons.shuffle_rounded,
+                                color: Colors.white70,
+                                size: 16,
+                              )
+                            : null)),
           ),
         ],
       ),
@@ -581,7 +825,13 @@ class _AddEventSheetState extends State<AddEventSheet> {
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: AppColors.gradientStart.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 8))],
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.gradientStart.withValues(alpha: 0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -593,11 +843,20 @@ class _AddEventSheetState extends State<AddEventSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(_isEditing ? Icons.save_rounded : Icons.add_rounded, color: Colors.white, size: 20),
+                Icon(
+                  _isEditing ? Icons.save_rounded : Icons.add_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   _isEditing ? '儲存變更' : '新增事件',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.5),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ],
             ),
@@ -608,7 +867,11 @@ class _AddEventSheetState extends State<AddEventSheet> {
   }
 
   Future<void> _showDateRangePicker() async {
-    final result = await showDateRangePickerDialog(context, initialStartDate: _startDate, initialEndDate: _endDate);
+    final result = await showDateRangePickerDialog(
+      context,
+      initialStartDate: _startDate,
+      initialEndDate: _endDate,
+    );
 
     if (result != null) {
       setState(() {
@@ -631,11 +894,17 @@ class _AddEventSheetState extends State<AddEventSheet> {
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
         // 彈跳動畫曲線
-        final curvedAnimation = CurvedAnimation(parent: animation, curve: Curves.easeOutBack);
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+        );
 
         return Transform.scale(
           scale: curvedAnimation.value,
-          child: Opacity(opacity: animation.value, child: _buildDeleteDialog(context)),
+          child: Opacity(
+            opacity: animation.value,
+            child: _buildDeleteDialog(context),
+          ),
         );
       },
     );
@@ -678,7 +947,11 @@ class _AddEventSheetState extends State<AddEventSheet> {
             // 標題
             const Text(
               '刪除事件',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
 
@@ -686,7 +959,11 @@ class _AddEventSheetState extends State<AddEventSheet> {
             Text(
               '確定要刪除「${widget.editEvent!.title}」嗎？\n此動作無法復原。',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15, color: AppColors.textSecondary, height: 1.5),
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -699,11 +976,17 @@ class _AddEventSheetState extends State<AddEventSheet> {
                     onPressed: () => Navigator.pop(context, false),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: const Text(
                       '取消',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
                 ),
@@ -715,7 +998,13 @@ class _AddEventSheetState extends State<AddEventSheet> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFEF4444),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [BoxShadow(color: const Color(0xFFEF4444).withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4))],
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Material(
                       color: Colors.transparent,
@@ -727,7 +1016,11 @@ class _AddEventSheetState extends State<AddEventSheet> {
                           child: Center(
                             child: Text(
                               '確認刪除',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -802,10 +1095,14 @@ class _ReminderSectionState extends State<_ReminderSection> {
     final yearStart = DateTime.now().year - 5;
     final yearIndex = (reminder.year - yearStart).clamp(0, 59);
     _yearController = FixedExtentScrollController(initialItem: yearIndex);
-    _monthController = FixedExtentScrollController(initialItem: reminder.month - 1);
+    _monthController = FixedExtentScrollController(
+      initialItem: reminder.month - 1,
+    );
     _dayController = FixedExtentScrollController(initialItem: reminder.day - 1);
     _hourController = FixedExtentScrollController(initialItem: reminder.hour);
-    _minuteController = FixedExtentScrollController(initialItem: reminder.minute);
+    _minuteController = FixedExtentScrollController(
+      initialItem: reminder.minute,
+    );
   }
 
   void _jumpControllersTo(DateTime reminder) {
@@ -835,7 +1132,7 @@ class _ReminderSectionState extends State<_ReminderSection> {
       builder: (context, isEnabled, _) {
         return ValueListenableBuilder<DateTime?>(
           valueListenable: widget.reminderTimeNotifier,
-          builder: (context, reminderTime, __) {
+          builder: (context, reminderTime, child) {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -912,8 +1209,9 @@ class _ReminderSectionState extends State<_ReminderSection> {
                           padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
-                            gradient:
-                                isEnabled ? AppColors.primaryGradient : null,
+                            gradient: isEnabled
+                                ? AppColors.primaryGradient
+                                : null,
                             color: isEnabled
                                 ? null
                                 : AppColors.textTertiary.withValues(alpha: 0.2),
@@ -966,20 +1264,20 @@ class _ReminderSectionState extends State<_ReminderSection> {
                             },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: _isReminderExpanded &&
+                                color:
+                                    _isReminderExpanded &&
                                         _reminderViewIndex == 0
-                                    ? AppColors.gradientStart
-                                        .withValues(alpha: 0.1)
+                                    ? AppColors.gradientStart.withValues(
+                                        alpha: 0.1,
+                                      )
                                     : AppColors.background,
                                 borderRadius: BorderRadius.circular(12),
-                                border: _isReminderExpanded &&
+                                border:
+                                    _isReminderExpanded &&
                                         _reminderViewIndex == 0
-                                    ? Border.all(
-                                        color: AppColors.gradientStart,
-                                      )
+                                    ? Border.all(color: AppColors.gradientStart)
                                     : Border.all(color: Colors.transparent),
                               ),
                               child: Column(
@@ -988,7 +1286,8 @@ class _ReminderSectionState extends State<_ReminderSection> {
                                     '日期',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: _isReminderExpanded &&
+                                      color:
+                                          _isReminderExpanded &&
                                               _reminderViewIndex == 0
                                           ? AppColors.gradientStart
                                           : AppColors.textTertiary,
@@ -997,14 +1296,14 @@ class _ReminderSectionState extends State<_ReminderSection> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    CalendarDateUtils
-                                        .formatYearMonthDaySlash(
+                                    CalendarDateUtils.formatYearMonthDaySlash(
                                       reminderTime,
                                     ),
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: _isReminderExpanded &&
+                                      color:
+                                          _isReminderExpanded &&
                                               _reminderViewIndex == 0
                                           ? AppColors.gradientStart
                                           : AppColors.textPrimary,
@@ -1033,20 +1332,20 @@ class _ReminderSectionState extends State<_ReminderSection> {
                             },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: _isReminderExpanded &&
+                                color:
+                                    _isReminderExpanded &&
                                         _reminderViewIndex == 1
-                                    ? AppColors.gradientStart
-                                        .withValues(alpha: 0.1)
+                                    ? AppColors.gradientStart.withValues(
+                                        alpha: 0.1,
+                                      )
                                     : AppColors.background,
                                 borderRadius: BorderRadius.circular(12),
-                                border: _isReminderExpanded &&
+                                border:
+                                    _isReminderExpanded &&
                                         _reminderViewIndex == 1
-                                    ? Border.all(
-                                        color: AppColors.gradientStart,
-                                      )
+                                    ? Border.all(color: AppColors.gradientStart)
                                     : Border.all(color: Colors.transparent),
                               ),
                               child: Column(
@@ -1055,7 +1354,8 @@ class _ReminderSectionState extends State<_ReminderSection> {
                                     '時間',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: _isReminderExpanded &&
+                                      color:
+                                          _isReminderExpanded &&
                                               _reminderViewIndex == 1
                                           ? AppColors.gradientStart
                                           : AppColors.textTertiary,
@@ -1068,7 +1368,8 @@ class _ReminderSectionState extends State<_ReminderSection> {
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: _isReminderExpanded &&
+                                      color:
+                                          _isReminderExpanded &&
                                               _reminderViewIndex == 1
                                           ? AppColors.gradientStart
                                           : AppColors.textPrimary,
@@ -1126,8 +1427,10 @@ class _ReminderSectionState extends State<_ReminderSection> {
     final currentYear = DateTime.now().year;
     final years = List.generate(60, (index) => (currentYear - 5) + index);
     final months = List.generate(12, (index) => index + 1);
-    final daysInMonth =
-        DateUtils.getDaysInMonth(reminderTime.year, reminderTime.month);
+    final daysInMonth = DateUtils.getDaysInMonth(
+      reminderTime.year,
+      reminderTime.month,
+    );
     final days = List.generate(daysInMonth, (index) => index + 1);
 
     return Row(
@@ -1141,8 +1444,10 @@ class _ReminderSectionState extends State<_ReminderSection> {
           width: 80,
           onSelectedItemChanged: (index) {
             final newYear = years[index];
-            final maxDays =
-                DateUtils.getDaysInMonth(newYear, reminderTime.month);
+            final maxDays = DateUtils.getDaysInMonth(
+              newYear,
+              reminderTime.month,
+            );
             final newDay = min(reminderTime.day, maxDays);
             widget.reminderTimeNotifier.value = DateTime(
               newYear,
@@ -1165,8 +1470,10 @@ class _ReminderSectionState extends State<_ReminderSection> {
           width: 60,
           onSelectedItemChanged: (index) {
             final newMonth = index + 1;
-            final maxDays =
-                DateUtils.getDaysInMonth(reminderTime.year, newMonth);
+            final maxDays = DateUtils.getDaysInMonth(
+              reminderTime.year,
+              newMonth,
+            );
             final newDay = min(reminderTime.day, maxDays);
             widget.reminderTimeNotifier.value = DateTime(
               reminderTime.year,
@@ -1197,7 +1504,7 @@ class _ReminderSectionState extends State<_ReminderSection> {
               reminderTime.minute,
             );
           },
-          key: ValueKey('day_picker_${daysInMonth}'),
+          key: ValueKey('day_picker_$daysInMonth'),
         ),
       ],
     );
@@ -1312,7 +1619,11 @@ class _ReminderSectionState extends State<_ReminderSection> {
 }
 
 /// 顯示新增事件表單
-void showAddEventSheet(BuildContext context, {DateTime? initialDate, Event? editEvent}) {
+void showAddEventSheet(
+  BuildContext context, {
+  DateTime? initialDate,
+  Event? editEvent,
+}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,

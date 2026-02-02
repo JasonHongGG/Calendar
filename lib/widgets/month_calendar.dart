@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../utils/date_utils.dart';
 import 'day_cell.dart';
 import '../theme/calendar_layout.dart';
+import '../providers/settings_provider.dart';
 
 /// 完整月曆組件
 class MonthCalendar extends StatefulWidget {
@@ -73,11 +74,12 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     // Use select to only rebuild when the events list changes
     final allEvents = context.select<EventProvider, List<Event>>((p) => p.events);
     final eventsVersion = context.select<EventProvider, int>((p) => p.eventsVersion);
+    final settings = context.watch<SettingsProvider>();
 
     _ensureCache(allEvents, eventsVersion);
 
     // MonthCalendar now only renders the grid content
-    return _buildCalendarGrid(_visibleWeeks, _monthEvents);
+    return _buildCalendarGrid(_visibleWeeks, _monthEvents, settings);
   }
 
   void _ensureCache(List<Event> allEvents, int eventsVersion) {
@@ -141,7 +143,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     }).toList();
   }
 
-  Widget _buildCalendarGrid(List<List<DateTime>> visibleWeeks, List<Event> events) {
+  Widget _buildCalendarGrid(List<List<DateTime>> visibleWeeks, List<Event> events, SettingsProvider settings) {
     // 計算動態高度
     // 使用 centralized layout constants
     final targetTotalHeight = CalendarLayout.monthGridTargetHeight;
@@ -153,12 +155,16 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     // 計算動態最大事件行數
     // cellHeight = dayLabelHeight + events
     final availableEventSpace = cellHeight - CalendarLayout.dayLabelHeight;
-    final maxEventRows = (availableEventSpace / (CalendarLayout.eventRowHeight + CalendarLayout.eventSpacing)).floor();
+    final rowHeight = settings.monthEventRowHeight;
+    final rowSpacing = settings.monthEventSpacing;
+    final capacity = (availableEventSpace / (rowHeight + rowSpacing)).floor();
+    final safeCapacity = capacity < 1 ? 1 : capacity;
+    final maxEventRows = safeCapacity;
 
     // 構建帶有分隔線的週列表
     final children = <Widget>[];
     for (var i = 0; i < visibleWeeks.length; i++) {
-      children.add(_buildWeekRow(visibleWeeks[i], _weekLayouts[i] ?? const [], cellHeight, maxEventRows));
+      children.add(_buildWeekRow(visibleWeeks[i], _weekLayouts[i] ?? const [], cellHeight, maxEventRows, rowHeight, rowSpacing, settings.monthEventFontSize, settings.monthEventOverflowFontSize));
       if (i < visibleWeeks.length - 1) {
         children.add(Divider(height: 1, thickness: 1, color: AppColors.divider.withValues(alpha: 0.3)));
       }
@@ -167,10 +173,8 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     return Column(children: children);
   }
 
-  Widget _buildWeekRow(List<DateTime> week, List<_WeekEventLayout> layoutEvents, double cellHeight, int maxRows) {
+  Widget _buildWeekRow(List<DateTime> week, List<_WeekEventLayout> layoutEvents, double cellHeight, int maxRows, double rowHeight, double rowSpacing, double eventFontSize, double overflowFontSize) {
     const baseCellHeight = CalendarLayout.dayLabelHeight;
-    const eventRowHeight = CalendarLayout.eventRowHeight;
-    const eventSpacing = CalendarLayout.eventSpacing;
 
     return SizedBox(
       height: cellHeight,
@@ -202,7 +206,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final cellWidth = constraints.maxWidth / 7;
-                  return Stack(children: _buildEventBars(week, layoutEvents, baseCellHeight, eventRowHeight, eventSpacing, cellWidth, maxRows));
+                  return Stack(children: _buildEventBars(week, layoutEvents, baseCellHeight, rowHeight, rowSpacing, cellWidth, maxRows, eventFontSize, overflowFontSize));
                 },
               ),
             ),
@@ -296,7 +300,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     return layout;
   }
 
-  List<Widget> _buildEventBars(List<DateTime> week, List<_WeekEventLayout> layouts, double topOffset, double rowHeight, double spacing, double cellWidth, int maxRows) {
+  List<Widget> _buildEventBars(List<DateTime> week, List<_WeekEventLayout> layouts, double topOffset, double rowHeight, double spacing, double cellWidth, int maxRows, double eventFontSize, double overflowFontSize) {
     final List<Widget> bars = [];
     // maxRows passed from arguments
 
@@ -324,7 +328,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Text(
             data.event.title,
-            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Colors.white, fontSize: eventFontSize, fontWeight: FontWeight.bold),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
@@ -422,7 +426,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Text(
                 '+$count',
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontWeight: FontWeight.w700),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: overflowFontSize, fontWeight: FontWeight.w700),
               ),
             ),
           ),
