@@ -147,7 +147,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
                 left: 24,
                 right: 24,
                 top: 0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                bottom: 24,
               ),
               child: Form(
                 key: _formKey,
@@ -1453,7 +1453,10 @@ void showAddEventSheet(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.4),
-    builder: (context) =>
-        AddEventSheet(initialDate: initialDate, editEvent: editEvent),
+    builder: (context) => MediaQuery.removeViewInsets(
+      context: context,
+      removeBottom: true,
+      child: AddEventSheet(initialDate: initialDate, editEvent: editEvent),
+    ),
   );
 }
