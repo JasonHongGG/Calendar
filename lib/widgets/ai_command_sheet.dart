@@ -110,7 +110,11 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
     final text = _controller.text.trim();
     if (text.isEmpty || _sending) return;
 
+    final localDate = _formatDate(DateTime.now());
+    final requestText = '$text\nLOCAL_DATE: $localDate';
+
     debugPrint('[AI] input: $text');
+    debugPrint('[AI] local date: $localDate');
 
     setState(() {
       _sending = true;
@@ -118,7 +122,7 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
 
     try {
       final service = AiCommandService(baseUrl: widget.baseUrl);
-      var response = await service.sendCommand(text);
+      var response = await service.sendCommand(requestText);
 
       debugPrint('[AI] initial actions: ${response.actions.map((a) => a.type).toList()}');
 
@@ -126,7 +130,7 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
       if (toolResults.isNotEmpty) {
         debugPrint('[AI] tool results: ${toolResults.map((r) => r['tool']).toList()}');
         debugPrint('[AI] tool results payload: $toolResults');
-        response = await service.sendCommand(text, toolResults: toolResults);
+        response = await service.sendCommand(requestText, toolResults: toolResults);
       }
 
       debugPrint('[AI] final actions: ${response.actions.map((a) => a.type).toList()}');
@@ -201,6 +205,13 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
     }
 
     return _filterEvents(provider.events, start, end).where((event) => event.title.toLowerCase().contains(query) || (event.description ?? '').toLowerCase().contains(query)).map(_eventToToolJson).toList();
+  }
+
+  String _formatDate(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
 
   List<Event> _filterEvents(List<Event> events, DateTime? start, DateTime? end) {
