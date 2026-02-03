@@ -68,3 +68,6 @@ app.*.map.json
 
 # Hive generated files (optional - 如果想保留 TypeAdapter 可移除此行)
 # *.g.dart
+
+
+/server/
