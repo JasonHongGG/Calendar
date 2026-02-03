@@ -10,15 +10,7 @@ class CalendarHeader extends StatelessWidget {
   final VoidCallback? onTitleTap;
   final VoidCallback? onTodayTap;
 
-  const CalendarHeader({
-    super.key,
-    required this.title,
-    this.onPrevious,
-    this.onNext,
-    this.onSettings,
-    this.onTitleTap,
-    this.onTodayTap,
-  });
+  const CalendarHeader({super.key, required this.title, this.onPrevious, this.onNext, this.onSettings, this.onTitleTap, this.onTodayTap});
 
   @override
   Widget build(BuildContext context) {
@@ -31,45 +23,25 @@ class CalendarHeader extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildIconButton(
-                icon: Icons.chevron_left_rounded,
-                onTap: onPrevious,
-              ),
+              _buildIconButton(icon: Icons.chevron_left_rounded, onTap: onPrevious),
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: onTitleTap,
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                 ),
               ),
               const SizedBox(width: 8),
-              _buildIconButton(
-                icon: Icons.chevron_right_rounded,
-                onTap: onNext,
-              ),
+              _buildIconButton(icon: Icons.chevron_right_rounded, onTap: onNext),
             ],
           ),
           // 右側按鈕區塊
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (onTodayTap != null) ...[
-                _buildIconButton(
-                  icon: Icons.calendar_today_outlined,
-                  onTap: onTodayTap,
-                ),
-                const SizedBox(width: 4),
-              ],
-              _buildIconButton(
-                icon: Icons.settings_outlined,
-                onTap: onSettings,
-              ),
+              if (onTodayTap != null) ...[_buildIconButton(icon: Icons.calendar_today_outlined, onTap: onTodayTap), const SizedBox(width: 4)],
+              if (onSettings != null) _buildIconButton(icon: Icons.settings_outlined, onTap: onSettings),
             ],
           ),
         ],

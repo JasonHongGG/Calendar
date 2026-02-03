@@ -6,9 +6,13 @@ class AiCommandService {
 
   const AiCommandService({this.baseUrl = 'https://calendar.alberthongtunnel.dpdns.org'});
 
-  Future<AiCommandResponse> sendCommand(String input) async {
+  Future<AiCommandResponse> sendCommand(String input, {List<Map<String, dynamic>>? toolResults}) async {
     final uri = Uri.parse('$baseUrl/command');
-    final response = await http.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode({'input': input}));
+    final payload = <String, dynamic>{'input': input};
+    if (toolResults != null && toolResults.isNotEmpty) {
+      payload['toolResults'] = toolResults;
+    }
+    final response = await http.post(uri, headers: {'Content-Type': 'application/json'}, body: jsonEncode(payload));
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final data = jsonDecode(response.body) as Map<String, dynamic>;

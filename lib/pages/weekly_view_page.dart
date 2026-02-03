@@ -19,18 +19,13 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
   @override
   Widget build(BuildContext context) {
     // Only rebuild if selectedDate or events list changes
-    final selectedDate = context.select<EventProvider, DateTime>(
-      (p) => p.selectedDate,
-    );
+    final selectedDate = context.select<EventProvider, DateTime>((p) => p.selectedDate);
     // Access provider for methods (read is fine since we select what we need)
     final provider = context.read<EventProvider>();
 
     // 計算該週的每一天 (假設週一為第一天)
     final daysOfWeek = _getDaysInWeek(selectedDate);
-    final title = CalendarDateUtils.formatDateRange(
-      daysOfWeek.first,
-      daysOfWeek.last,
-    );
+    final title = CalendarDateUtils.formatDateRange(daysOfWeek.first, daysOfWeek.last);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -57,7 +52,6 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
           ],
         ),
       ),
-      floatingActionButton: _buildFAB(context, selectedDate),
     );
   }
 
@@ -68,13 +62,7 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.gradientStart.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: AppColors.gradientStart.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -82,42 +70,24 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
           IconButton(
             onPressed: () {
               // 上一週
-              provider.setSelectedDate(
-                provider.selectedDate.subtract(const Duration(days: 7)),
-              );
+              provider.setSelectedDate(provider.selectedDate.subtract(const Duration(days: 7)));
             },
             icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-              padding: const EdgeInsets.all(8),
-            ),
+            style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.2), padding: const EdgeInsets.all(8)),
           ),
           Column(
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               const SizedBox(height: 4),
               GestureDetector(
                 onTap: () => provider.goToToday(),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    '回到今天',
-                    style: TextStyle(fontSize: 10, color: Colors.white),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+                  child: const Text('回到今天', style: TextStyle(fontSize: 10, color: Colors.white)),
                 ),
               ),
             ],
@@ -125,15 +95,10 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
           IconButton(
             onPressed: () {
               // 下一週
-              provider.setSelectedDate(
-                provider.selectedDate.add(const Duration(days: 7)),
-              );
+              provider.setSelectedDate(provider.selectedDate.add(const Duration(days: 7)));
             },
             icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-              padding: const EdgeInsets.all(8),
-            ),
+            style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.2), padding: const EdgeInsets.all(8)),
           ),
         ],
       ),
@@ -157,32 +122,17 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
                 children: [
                   Text(
                     weekday,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isToday
-                          ? AppColors.gradientStart
-                          : AppColors.textSecondary,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isToday ? AppColors.gradientStart : AppColors.textSecondary),
                   ),
                   const SizedBox(height: 4),
                   Container(
                     width: 40,
                     height: 40,
                     alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isToday
-                          ? AppColors.gradientStart
-                          : Colors.transparent,
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: BoxDecoration(color: isToday ? AppColors.gradientStart : Colors.transparent, shape: BoxShape.circle),
                     child: Text(
                       '${date.day}',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: isToday ? Colors.white : AppColors.textPrimary,
-                      ),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: isToday ? Colors.white : AppColors.textPrimary),
                     ),
                   ),
                 ],
@@ -190,11 +140,7 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
             ),
 
             // 中間：分隔裝飾線
-            Container(
-              width: 2,
-              color: AppColors.dividerLight,
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-            ),
+            Container(width: 2, color: AppColors.dividerLight, margin: const EdgeInsets.symmetric(horizontal: 12)),
 
             // 右側：事件列表
             Expanded(
@@ -207,8 +153,7 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
                           padding: const EdgeInsets.only(bottom: 12),
                           child: EventCard(
                             event: event,
-                            onTap: () =>
-                                showAddEventSheet(context, editEvent: event),
+                            onTap: () => showAddEventSheet(context, editEvent: event),
                             // 使用 delete_confirmation_dialog.dart 的邏輯
                             onDelete: () => _confirmDelete(context, event),
                           ),
@@ -228,37 +173,7 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
       alignment: Alignment.centerLeft,
       child: Text(
         '', // 保持空白，讓畫面更清爽
-        style: TextStyle(
-          fontSize: 13,
-          color: AppColors.textTertiary.withValues(alpha: 0.5),
-          fontStyle: FontStyle.italic,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFAB(BuildContext context, DateTime selectedDate) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 80),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.gradientStart.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: () =>
-              showAddEventSheet(context, initialDate: selectedDate),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
-        ),
+        style: TextStyle(fontSize: 13, color: AppColors.textTertiary.withValues(alpha: 0.5), fontStyle: FontStyle.italic),
       ),
     );
   }

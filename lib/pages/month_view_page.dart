@@ -116,90 +116,83 @@ class _MonthViewPageState extends State<MonthViewPage> {
 
             // Static Calendar Background & Header
             // The PageView will slide strictly inside this container
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: AppDimens.spacingNormal),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppDimens.radiusXLarge),
-                  boxShadow: [BoxShadow(color: AppColors.shadow.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4))],
-                ),
-                child: Column(
-                  children: [
-                    // Static Weekday Header (Doesn't move)
-                    _buildWeekdayHeader(),
-                    const Divider(height: 1),
+            Container(
+              height: CalendarLayout.monthContainerHeight,
+              margin: const EdgeInsets.symmetric(horizontal: AppDimens.spacingNormal),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppDimens.radiusXLarge),
+                boxShadow: [BoxShadow(color: AppColors.shadow.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 4))],
+              ),
+              child: Column(
+                children: [
+                  // Static Weekday Header (Doesn't move)
+                  _buildWeekdayHeader(),
+                  const Divider(height: 1),
 
-                    // Sliding Date Grid
-                    Expanded(
-                      child: PageView.builder(
-                        controller: _pageController,
-                        allowImplicitScrolling: true,
-                        onPageChanged: (index) {
-                          final provider = context.read<EventProvider>();
-                          final newMonth = _calculateDateFromIndex(index);
-                          if (newMonth.year != provider.currentMonth.year || newMonth.month != provider.currentMonth.month) {
-                            provider.setCurrentMonth(newMonth);
-                          }
-                          _prewarmTimer?.cancel();
-                          _prewarmTimer = Timer(const Duration(milliseconds: 180), () {
-                            if (!mounted) return;
-                            final events = provider.events;
-                            final eventsVersion = provider.eventsVersion;
-                            final nextMonth = _calculateDateFromIndex(index + 1);
-                            final prewarmKey = '${nextMonth.year}-${nextMonth.month}-$eventsVersion';
-                            if (_lastPrewarmKey == prewarmKey) return;
-                            _lastPrewarmKey = prewarmKey;
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              MonthCalendar.prewarm(events, nextMonth, eventsVersion);
-                            });
+                  // Sliding Date Grid
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      allowImplicitScrolling: true,
+                      onPageChanged: (index) {
+                        final provider = context.read<EventProvider>();
+                        final newMonth = _calculateDateFromIndex(index);
+                        if (newMonth.year != provider.currentMonth.year || newMonth.month != provider.currentMonth.month) {
+                          provider.setCurrentMonth(newMonth);
+                        }
+                        _prewarmTimer?.cancel();
+                        _prewarmTimer = Timer(const Duration(milliseconds: 180), () {
+                          if (!mounted) return;
+                          final events = provider.events;
+                          final eventsVersion = provider.eventsVersion;
+                          final nextMonth = _calculateDateFromIndex(index + 1);
+                          final prewarmKey = '${nextMonth.year}-${nextMonth.month}-$eventsVersion';
+                          if (_lastPrewarmKey == prewarmKey) return;
+                          _lastPrewarmKey = prewarmKey;
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            MonthCalendar.prewarm(events, nextMonth, eventsVersion);
                           });
-                        },
-                        itemBuilder: (context, index) {
-                          final monthDate = _calculateDateFromIndex(index);
-                          return Selector<EventProvider, DateTime>(
-                            selector: (context, provider) => provider.selectedDate,
-                            builder: (context, selectedDate, child) {
-                              return MonthCalendar(
-                                currentMonth: monthDate,
-                                selectedDate: selectedDate,
-                                onDateSelected: (date) {
-                                  final provider = context.read<EventProvider>();
-                                  // 如果已經選中該日期，則打開詳情頁
-                                  if (CalendarDateUtils.isSameDay(date, selectedDate)) {
-                                    showDialog(
-                                      context: context,
-                                      barrierColor: Colors.black54,
-                                      builder: (context) => DayDetailSheet(date: date),
-                                    );
-                                  } else {
-                                    // 否則只是切換選中日期
-                                    provider.setSelectedDate(date);
-                                  }
-                                },
-                                onEventTap: (event) {
-                                  showAddEventSheet(context, editEvent: event, initialDate: event.startDate);
-                                },
-                              );
-                            },
-                          );
-                        },
-                      ),
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        final monthDate = _calculateDateFromIndex(index);
+                        return Selector<EventProvider, DateTime>(
+                          selector: (context, provider) => provider.selectedDate,
+                          builder: (context, selectedDate, child) {
+                            return MonthCalendar(
+                              currentMonth: monthDate,
+                              selectedDate: selectedDate,
+                              onDateSelected: (date) {
+                                final provider = context.read<EventProvider>();
+                                // 如果已經選中該日期，則打開詳情頁
+                                if (CalendarDateUtils.isSameDay(date, selectedDate)) {
+                                  showDialog(
+                                    context: context,
+                                    barrierColor: Colors.black54,
+                                    builder: (context) => DayDetailSheet(date: date),
+                                  );
+                                } else {
+                                  // 否則只是切換選中日期
+                                  provider.setSelectedDate(date);
+                                }
+                              },
+                              onEventTap: (event) {
+                                showAddEventSheet(context, editEvent: event, initialDate: event.startDate);
+                              },
+                            );
+                          },
+                        );
+                      },
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
-      // FAB needs to listen to selectedDate changes
-      floatingActionButton: Selector<EventProvider, DateTime>(
-        selector: (context, provider) => provider.selectedDate,
-        builder: (context, selectedDate, child) {
-          return _buildFAB(context, selectedDate);
-        },
-      ),
+      // FAB removed; add action is in navigation bar
     );
   }
 
@@ -225,26 +218,6 @@ class _MonthViewPageState extends State<MonthViewPage> {
             ),
           );
         }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildFAB(BuildContext context, DateTime selectedDate) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 80),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: AppColors.gradientStart.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6))],
-        ),
-        child: FloatingActionButton(
-          heroTag: 'month_view_fab',
-          onPressed: () => showAddEventSheet(context, initialDate: selectedDate),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
-        ),
       ),
     );
   }
