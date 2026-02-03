@@ -79,7 +79,11 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     _ensureCache(allEvents, eventsVersion);
 
     // MonthCalendar now only renders the grid content
-    return _buildCalendarGrid(_visibleWeeks, _monthEvents, settings);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return _buildCalendarGrid(_visibleWeeks, _monthEvents, settings, constraints.maxHeight);
+      },
+    );
   }
 
   void _ensureCache(List<Event> allEvents, int eventsVersion) {
@@ -143,10 +147,10 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     }).toList();
   }
 
-  Widget _buildCalendarGrid(List<List<DateTime>> visibleWeeks, List<Event> events, SettingsProvider settings) {
+  Widget _buildCalendarGrid(List<List<DateTime>> visibleWeeks, List<Event> events, SettingsProvider settings, double availableHeight) {
     // 計算動態高度
     // 使用 centralized layout constants
-    final targetTotalHeight = CalendarLayout.monthGridTargetHeight;
+    final targetTotalHeight = availableHeight;
     // 減去分隔線的高度 (每週之間有一條線，共 visibleWeeks.length - 1 條)
     // 確保總高度 (Cells + Dividers) 準確等於 targetTotalHeight
     final totalDividerHeight = (visibleWeeks.length - 1) * 1.0;

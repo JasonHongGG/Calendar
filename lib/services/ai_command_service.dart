@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 class AiCommandService {
   final String baseUrl;
 
-  const AiCommandService({this.baseUrl = 'https://calendar.alberthongtunnel.dpdns.org/'});
+  const AiCommandService({this.baseUrl = 'https://calendar.alberthongtunnel.dpdns.org'});
 
   Future<AiCommandResponse> sendCommand(String input) async {
     final uri = Uri.parse('$baseUrl/command');

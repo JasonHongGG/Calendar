@@ -6,6 +6,7 @@ import '../providers/event_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/ai_command_service.dart';
 import '../widgets/top_notification.dart';
+import '../widgets/add_event_sheet.dart';
 import 'weekly_view_page.dart';
 import 'month_view_page.dart';
 import 'schedule_page.dart';
@@ -23,6 +24,7 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _aiController = TextEditingController();
   final FocusNode _aiFocusNode = FocusNode();
   bool _aiSending = false;
+  bool _aiSheetOpen = false;
 
   List<Widget> get _pages => const [
     MonthViewPage(),
@@ -35,6 +37,18 @@ class _HomePageState extends State<HomePage> {
     _aiController.dispose();
     _aiFocusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _aiFocusNode.addListener(_handleAiFocusChange);
+  }
+
+  void _handleAiFocusChange() {
+    if (!_aiFocusNode.hasFocus && _aiSheetOpen && mounted) {
+      Navigator.of(context).maybePop();
+    }
   }
 
   @override
@@ -51,14 +65,17 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           // 頁面內容 (使用 Positioned.fill 確保填滿)
           Positioned.fill(
-            child: IndexedStack(index: _currentIndex, children: _pages),
+            child: MediaQuery.removeViewInsets(
+              context: context,
+              removeBottom: true,
+              child: IndexedStack(index: _currentIndex, children: _pages),
+            ),
           ),
-
-          if (aiEnabled) Positioned(left: 24, right: 24, bottom: 20 + 70 + 12, child: _buildAiInputBar()),
 
           // 底部導航欄
           _buildBottomNavigationBar(),
@@ -68,6 +85,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBottomNavigationBar() {
+    final aiEnabled = context.watch<SettingsProvider>().aiEnabled;
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: SafeArea(
@@ -83,17 +102,22 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavItem(index: 0, icon: Icons.calendar_month_rounded, label: '月視圖'),
-              Container(width: 1, height: 24, color: AppColors.dividerLight),
-              _buildNavItem(
-                index: 1,
-                icon: Icons.date_range_rounded, // 週視圖圖示
-                label: '週視圖',
+              Expanded(
+                child: _buildNavItem(index: 0, icon: Icons.calendar_month_rounded, label: '月視圖'),
               ),
-              Container(width: 1, height: 24, color: AppColors.dividerLight),
-              _buildNavItem(index: 2, icon: Icons.format_list_bulleted_rounded, label: '日程'),
+              Expanded(
+                child: _buildNavItem(index: 1, icon: Icons.date_range_rounded, label: '週視圖'),
+              ),
+              Expanded(
+                child: _buildNavItem(index: 2, icon: Icons.format_list_bulleted_rounded, label: '日程'),
+              ),
+              Expanded(
+                child: _buildActionItem(icon: Icons.mic_rounded, onTap: aiEnabled ? _openAiSheet : _showAiDisabled, enabled: aiEnabled),
+              ),
+              Expanded(
+                child: _buildActionItem(icon: Icons.add_rounded, onTap: () => showAddEventSheet(context), emphasize: true),
+              ),
             ],
           ),
         ),
@@ -101,42 +125,81 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildAiInputBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: AppColors.shadow.withValues(alpha: 0.12), blurRadius: 16, offset: const Offset(0, 4))],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _aiController,
-              focusNode: _aiFocusNode,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _submitAiCommand(),
-              decoration: const InputDecoration(hintText: '輸入指令：新增、刪除、修改、提醒…', border: InputBorder.none),
+  void _openAiSheet() {
+    _aiSheetOpen = true;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _aiFocusNode.requestFocus();
+          }
+        });
+
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [BoxShadow(color: AppColors.shadow.withValues(alpha: 0.16), blurRadius: 20, offset: const Offset(0, 6))],
+                  ),
+                  child: SingleChildScrollView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _aiController,
+                            focusNode: _aiFocusNode,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _submitAiCommand(closeContext: sheetContext),
+                            decoration: const InputDecoration(hintText: '輸入指令：新增、刪除、修改、提醒…', border: InputBorder.none),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _aiSending ? null : () => _submitAiCommand(closeContext: sheetContext),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.gradientStart,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
+                          child: _aiSending
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.send_rounded, size: 18),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-          ElevatedButton(
-            onPressed: _aiSending ? null : _submitAiCommand,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.gradientStart,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            ),
-            child: _aiSending ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.send_rounded, size: 18),
-          ),
-        ],
-      ),
-    );
+        );
+      },
+    ).whenComplete(() {
+      _aiSheetOpen = false;
+    });
   }
 
-  Future<void> _submitAiCommand() async {
+  void _showAiDisabled() {
+    NotificationOverlay.show(context: context, message: '請先在設定中啟用 AI 指令', type: NotificationType.info);
+  }
+
+  Future<void> _submitAiCommand({BuildContext? closeContext}) async {
     final text = _aiController.text.trim();
     if (text.isEmpty || _aiSending) return;
 
@@ -150,6 +213,9 @@ class _HomePageState extends State<HomePage> {
       final response = await service.sendCommand(text);
       await _applyAiActions(response.actions, response.message);
       _aiController.clear();
+      if (closeContext != null && closeContext.mounted && Navigator.of(closeContext).canPop()) {
+        Navigator.of(closeContext).pop();
+      }
     } catch (error) {
       if (!mounted) return;
       NotificationOverlay.show(context: context, message: 'AI 指令失敗：$error', type: NotificationType.error);
@@ -240,29 +306,42 @@ class _HomePageState extends State<HomePage> {
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        height: 70,
         color: Colors.transparent, // 擴大點擊區域
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutBack,
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutBack,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: isSelected ? AppColors.gradientStart.withValues(alpha: 0.1) : Colors.transparent, shape: BoxShape.circle),
+            child: Icon(icon, size: 26, color: isSelected ? AppColors.gradientStart : AppColors.textTertiary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionItem({required IconData icon, required VoidCallback onTap, bool enabled = true, bool emphasize = false}) {
+    final color = enabled ? (emphasize ? AppColors.gradientStart : AppColors.gradientStart) : AppColors.textTertiary;
+    final background = emphasize ? AppColors.gradientStart.withValues(alpha: 0.16) : color.withValues(alpha: 0.12);
+
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      behavior: HitTestBehavior.opaque,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.5,
+        child: Container(
+          height: 70,
+          color: Colors.transparent,
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: isSelected ? AppColors.gradientStart.withValues(alpha: 0.1) : Colors.transparent, shape: BoxShape.circle),
-              child: Icon(icon, size: 26, color: isSelected ? AppColors.gradientStart : AppColors.textTertiary),
+              decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+              child: Icon(icon, size: 26, color: color),
             ),
-            // 您可以選擇是否要保留文字，或者只顯示圖示
-            // 如果要更極簡，可以移除下面的 Text
-            // AnimatedOpacity(
-            //   duration: const Duration(milliseconds: 200),
-            //   opacity: isSelected ? 1.0 : 0.0,
-            //   child: isSelected
-            //       ? Text(label, style: TextStyle(fontSize: 10, color: AppColors.gradientStart))
-            //       : const SizedBox(height: 10),
-            // ),
-          ],
+          ),
         ),
       ),
     );

@@ -5,7 +5,7 @@ enum MonthEventTitleSize { medium, large, xlarge }
 class SettingsProvider extends ChangeNotifier {
   MonthEventTitleSize _monthEventTitleSize = MonthEventTitleSize.medium;
   bool _aiEnabled = false;
-  String _aiBaseUrl = 'https://calendar.alberthongtunnel.dpdns.org/';
+  String _aiBaseUrl = 'https://calendar.alberthongtunnel.dpdns.org';
 
   MonthEventTitleSize get monthEventTitleSize => _monthEventTitleSize;
   bool get aiEnabled => _aiEnabled;

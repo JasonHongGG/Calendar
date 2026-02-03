@@ -92,7 +92,7 @@ class SettingsPage extends StatelessWidget {
                       '啟用 AI 指令',
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                     ),
-                    Switch.adaptive(value: settings.aiEnabled, onChanged: settings.setAiEnabled, activeColor: AppColors.gradientStart),
+                    Switch.adaptive(value: settings.aiEnabled, onChanged: settings.setAiEnabled, activeThumbColor: AppColors.gradientStart, activeTrackColor: AppColors.gradientStart.withValues(alpha: 0.3)),
                   ],
                 ),
                 const SizedBox(height: 8),
