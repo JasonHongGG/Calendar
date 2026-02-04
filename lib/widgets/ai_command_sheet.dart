@@ -99,7 +99,7 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
         child: ListView.separated(
           shrinkWrap: true,
           itemCount: steps.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          separatorBuilder: (context, index) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final step = steps[index];
             return Row(

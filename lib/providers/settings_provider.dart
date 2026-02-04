@@ -30,6 +30,26 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void applyBackup({MonthEventTitleSize? monthEventTitleSize, bool? aiEnabled, String? aiBaseUrl}) {
+    var changed = false;
+    if (monthEventTitleSize != null && _monthEventTitleSize != monthEventTitleSize) {
+      _monthEventTitleSize = monthEventTitleSize;
+      changed = true;
+    }
+    if (aiEnabled != null && _aiEnabled != aiEnabled) {
+      _aiEnabled = aiEnabled;
+      changed = true;
+    }
+    if (aiBaseUrl != null) {
+      final trimmed = aiBaseUrl.trim();
+      if (trimmed.isNotEmpty && _aiBaseUrl != trimmed) {
+        _aiBaseUrl = trimmed;
+        changed = true;
+      }
+    }
+    if (changed) notifyListeners();
+  }
+
   double get monthEventRowHeight {
     switch (_monthEventTitleSize) {
       case MonthEventTitleSize.large:

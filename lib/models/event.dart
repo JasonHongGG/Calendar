@@ -33,6 +33,30 @@ class Event extends HiveObject {
 
   Event({required this.id, required this.title, required this.startDate, required this.endDate, this.isAllDay = false, this.colorIndex = 0, this.location, this.description, this.reminderTime});
 
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'title': title, 'startDate': startDate.toIso8601String(), 'endDate': endDate.toIso8601String(), 'isAllDay': isAllDay, 'colorIndex': colorIndex, 'location': location, 'description': description, 'reminderTime': reminderTime?.toIso8601String()};
+  }
+
+  static Event fromJson(Map<String, dynamic> json) {
+    final idRaw = json['id'];
+    final titleRaw = json['title'];
+    final startRaw = json['startDate'];
+    final endRaw = json['endDate'];
+
+    final id = idRaw is String ? idRaw : '';
+    final title = titleRaw is String ? titleRaw : '';
+    final startDate = startRaw is String ? DateTime.tryParse(startRaw) : null;
+    final endDate = endRaw is String ? DateTime.tryParse(endRaw) : null;
+
+    final isAllDayRaw = json['isAllDay'];
+    final colorIndexRaw = json['colorIndex'];
+    final locationRaw = json['location'];
+    final descriptionRaw = json['description'];
+    final reminderRaw = json['reminderTime'];
+
+    return Event(id: id, title: title, startDate: startDate ?? DateTime.now(), endDate: endDate ?? (startDate ?? DateTime.now()), isAllDay: isAllDayRaw is bool ? isAllDayRaw : false, colorIndex: colorIndexRaw is int ? colorIndexRaw : int.tryParse('$colorIndexRaw') ?? 0, location: locationRaw is String ? locationRaw : null, description: descriptionRaw is String ? descriptionRaw : null, reminderTime: reminderRaw is String ? DateTime.tryParse(reminderRaw) : null);
+  }
+
   /// 檢查事件是否在指定日期
   bool isOnDate(DateTime date) {
     final dateOnly = DateTime(date.year, date.month, date.day);

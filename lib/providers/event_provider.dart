@@ -113,6 +113,53 @@ class EventProvider extends ChangeNotifier {
     _loadEvents();
   }
 
+  /// 以匯入內容覆蓋所有事件（用於匯入備份）
+  Future<void> replaceAllEvents(List<Event> events) async {
+    if (_eventsBox == null) {
+      throw StateError('Event box not initialized');
+    }
+
+    // Replace storage first
+    await _eventsBox!.clear();
+    for (final event in events) {
+      await _eventsBox!.put(event.id, event);
+    }
+
+    // Reschedule notifications based on imported data
+    await NotificationService().cancelAllNotifications();
+    for (final event in events) {
+      final reminderTime = event.reminderTime;
+      if (reminderTime == null) continue;
+      await NotificationService().scheduleNotification(id: _notificationIdForEventId(event.id), title: '行事曆提醒: ${event.title}', body: CalendarDateUtils.formatEventTime(event.startDate, event.endDate, event.isAllDay), scheduledDate: reminderTime);
+    }
+
+    _loadEvents();
+  }
+
+  /// 合併匯入事件：同 id 覆蓋更新，不存在則新增（不會刪除原有事件）
+  Future<void> mergeEvents(List<Event> events) async {
+    if (_eventsBox == null) {
+      throw StateError('Event box not initialized');
+    }
+
+    for (final event in events) {
+      await _eventsBox!.put(event.id, event);
+
+      // Keep notifications in sync for this event
+      await NotificationService().cancelNotification(_notificationIdForEventId(event.id));
+      final reminderTime = event.reminderTime;
+      if (reminderTime != null) {
+        await NotificationService().scheduleNotification(id: _notificationIdForEventId(event.id), title: '行事曆提醒: ${event.title}', body: CalendarDateUtils.formatEventTime(event.startDate, event.endDate, event.isAllDay), scheduledDate: reminderTime);
+      }
+    }
+
+    _loadEvents();
+  }
+
+  Future<void> clearAllEvents() {
+    return replaceAllEvents([]);
+  }
+
   /// 取得指定日期的事件
   List<Event> getEventsForDate(DateTime date) {
     return _events.where((event) => event.isOnDate(date)).toList();
