@@ -27,15 +27,24 @@ class AiCommandSheet extends StatefulWidget {
   State<AiCommandSheet> createState() => _AiCommandSheetState();
 }
 
+enum _AiStepStatus { pending, running, done, error }
+
+class _AiStep {
+  _AiStep(this.title, this.status);
+
+  final String title;
+  _AiStepStatus status;
+}
+
 class _AiCommandSheetState extends State<AiCommandSheet> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   bool _sending = false;
+  final List<_AiStep> _steps = [];
 
   @override
   void initState() {
     super.initState();
-    _focusNode.addListener(_handleFocusChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _focusNode.requestFocus();
@@ -45,16 +54,9 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
 
   @override
   void dispose() {
-    _focusNode.removeListener(_handleFocusChange);
     _focusNode.dispose();
     _controller.dispose();
     super.dispose();
-  }
-
-  void _handleFocusChange() {
-    if (!_focusNode.hasFocus && mounted) {
-      Navigator.of(context).maybePop();
-    }
   }
 
   @override
@@ -76,30 +78,118 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [BoxShadow(color: AppColors.shadow.withValues(alpha: 0.16), blurRadius: 20, offset: const Offset(0, 6))],
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      focusNode: _focusNode,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _submit(),
-                      decoration: const InputDecoration(hintText: '輸入指令：新增、刪除、修改、提醒…', border: InputBorder.none),
-                    ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [_buildProgressList(), _buildInputRow()]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressList() {
+    if (_steps.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.dividerLight),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 160),
+        child: ListView.separated(
+          shrinkWrap: true,
+          itemCount: _steps.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final step = _steps[index];
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildStepStatusIcon(step.status),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    step.title,
+                    style: TextStyle(color: step.status == _AiStepStatus.done ? AppColors.textPrimary : AppColors.textSecondary, fontSize: 13, fontWeight: step.status == _AiStepStatus.running ? FontWeight.w600 : FontWeight.w500),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _sending ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.gradientStart,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    ),
-                    child: _sending ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.send_rounded, size: 18),
+                ),
+                if (step.status == _AiStepStatus.done)
+                  Text(
+                    '完成',
+                    style: TextStyle(color: AppColors.textTertiary, fontSize: 11, fontWeight: FontWeight.w500),
                   ),
-                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepStatusIcon(_AiStepStatus status) {
+    switch (status) {
+      case _AiStepStatus.running:
+        return const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gradientStart));
+      case _AiStepStatus.done:
+        return const Icon(Icons.check_circle_rounded, color: AppColors.gradientStart, size: 16);
+      case _AiStepStatus.error:
+        return const Icon(Icons.error_rounded, color: Colors.redAccent, size: 16);
+      case _AiStepStatus.pending:
+        return Icon(Icons.circle_outlined, color: AppColors.textTertiary.withValues(alpha: 0.6), size: 14);
+    }
+  }
+
+  Widget _buildInputRow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.dividerLight),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _submit(),
+              decoration: const InputDecoration(hintText: '輸入指令：新增、刪除、修改、提醒…', border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 10)),
+            ),
+          ),
+          const SizedBox(width: 10),
+          _buildSendButton(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSendButton() {
+    final child = _sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white)) : const Icon(Icons.send_rounded, size: 18, color: Colors.white);
+
+    return IgnorePointer(
+      ignoring: _sending,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: _sending ? 0.6 : 1,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _submit,
+            borderRadius: BorderRadius.circular(16),
+            child: Ink(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: AppColors.gradientStart.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 6))],
               ),
+              child: Center(child: child),
             ),
           ),
         ),
@@ -120,29 +210,48 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
     setState(() {
       _sending = true;
     });
+    _resetSteps();
+    final understandingIndex = _addStep('理解需求中', _AiStepStatus.running);
 
     try {
       final service = AiCommandService(baseUrl: widget.baseUrl);
       var response = await service.sendCommand(requestText);
 
+      _updateStep(understandingIndex, _AiStepStatus.done);
+      final toolCheckIndex = _addStep('檢查是否需要工具', _AiStepStatus.running);
+
       debugPrint('[AI] initial actions: ${response.actions.map((a) => a.type).toList()}');
+
+      final toolActions = response.actions.where((action) => action.type == 'tool_request').toList();
+      if (toolActions.isEmpty) {
+        _updateStep(toolCheckIndex, _AiStepStatus.done);
+        _addStep('無需使用工具', _AiStepStatus.done);
+      } else {
+        _updateStep(toolCheckIndex, _AiStepStatus.done);
+      }
 
       final toolResults = await _runToolRequests(response.actions);
       if (toolResults.isNotEmpty) {
+        final mergeIndex = _addStep('整合工具結果', _AiStepStatus.running);
         debugPrint('[AI] tool results: ${toolResults.map((r) => r['tool']).toList()}');
         debugPrint('[AI] tool results payload: $toolResults');
         response = await service.sendCommand(requestText, toolResults: toolResults);
+        _updateStep(mergeIndex, _AiStepStatus.done);
       }
 
       debugPrint('[AI] final actions: ${response.actions.map((a) => a.type).toList()}');
       debugPrint('[AI] final message: ${response.message ?? ''}');
 
+      final applyIndex = _addStep('套用動作', _AiStepStatus.running);
       await _applyAiActions(response.actions, response.message);
+      _updateStep(applyIndex, _AiStepStatus.done);
+      _addStep('完成', _AiStepStatus.done);
       _controller.clear();
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
+      if (mounted) {
+        _focusNode.requestFocus();
       }
     } catch (error) {
+      _addStep('執行失敗', _AiStepStatus.error);
       if (!mounted) return;
       NotificationOverlay.show(context: context, message: 'AI 指令失敗：$error', type: NotificationType.error);
     } finally {
@@ -165,6 +274,7 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
       final tool = payload['tool'] as String?;
       final args = (payload['args'] as Map?)?.cast<String, dynamic>() ?? <String, dynamic>{};
       if (tool == null) continue;
+      final stepIndex = _addStep('使用工具：$tool', _AiStepStatus.running);
 
       switch (tool) {
         case 'list_events':
@@ -174,9 +284,31 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
           results.add({'tool': tool, 'args': args, 'result': _searchEvents(provider, args)});
           break;
       }
+
+      _updateStep(stepIndex, _AiStepStatus.done);
     }
 
     return results;
+  }
+
+  void _resetSteps() {
+    if (!mounted) return;
+    setState(_steps.clear);
+  }
+
+  int _addStep(String title, _AiStepStatus status) {
+    if (!mounted) return -1;
+    setState(() {
+      _steps.add(_AiStep(title, status));
+    });
+    return _steps.length - 1;
+  }
+
+  void _updateStep(int index, _AiStepStatus status) {
+    if (!mounted || index < 0 || index >= _steps.length) return;
+    setState(() {
+      _steps[index].status = status;
+    });
   }
 
   List<Map<String, dynamic>> _listEvents(EventProvider provider, Map<String, dynamic> args) {
