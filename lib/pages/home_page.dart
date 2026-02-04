@@ -83,7 +83,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openAiSheet() {
-    AiCommandSheet.open(context);
+    AiCommandSheet.open(
+      context,
+      onJumpToMonth: () {
+        if (!mounted) return;
+        setState(() {
+          _currentIndex = 0;
+        });
+      },
+    );
   }
 
   void _showAiDisabled() {

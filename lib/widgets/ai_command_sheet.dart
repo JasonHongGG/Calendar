@@ -8,17 +8,18 @@ import '../theme/app_colors.dart';
 import 'top_notification.dart';
 
 class AiCommandSheet extends StatefulWidget {
-  const AiCommandSheet({super.key, required this.baseUrl});
+  const AiCommandSheet({super.key, required this.baseUrl, this.onJumpToMonth});
 
   final String baseUrl;
+  final VoidCallback? onJumpToMonth;
 
-  static Future<void> open(BuildContext context) {
+  static Future<void> open(BuildContext context, {VoidCallback? onJumpToMonth}) {
     final baseUrl = context.read<SettingsProvider>().aiBaseUrl;
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AiCommandSheet(baseUrl: baseUrl),
+      builder: (_) => AiCommandSheet(baseUrl: baseUrl, onJumpToMonth: onJumpToMonth),
     );
   }
 
@@ -181,8 +182,9 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
   List<Map<String, dynamic>> _listEvents(EventProvider provider, Map<String, dynamic> args) {
     DateTime? start;
     DateTime? end;
-    if (args['date'] is String) {
-      start = DateTime.parse(args['date'] as String);
+    final dateArg = args['date'] as String?;
+    if (dateArg != null && dateArg.trim().isNotEmpty) {
+      start = DateTime.parse(dateArg);
       end = start.add(const Duration(days: 1));
     } else if (args['rangeStart'] is String && args['rangeEnd'] is String) {
       start = DateTime.parse(args['rangeStart'] as String);
@@ -196,8 +198,9 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
     final query = (args['query'] as String? ?? '').toLowerCase();
     DateTime? start;
     DateTime? end;
-    if (args['date'] is String) {
-      start = DateTime.parse(args['date'] as String);
+    final dateArg = args['date'] as String?;
+    if (dateArg != null && dateArg.trim().isNotEmpty) {
+      start = DateTime.parse(dateArg);
       end = start.add(const Duration(days: 1));
     } else if (args['rangeStart'] is String && args['rangeEnd'] is String) {
       start = DateTime.parse(args['rangeStart'] as String);
@@ -239,6 +242,26 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
 
     for (final action in actions) {
       switch (action.type) {
+        case 'find_event':
+          final payload = action.payload;
+          DateTime? targetDate;
+          if (payload['id'] is String) {
+            final event = findEventById(payload['id'] as String);
+            targetDate = event?.startDate;
+          }
+          if (targetDate == null && payload['startDate'] is String) {
+            targetDate = DateTime.parse(payload['startDate'] as String);
+          }
+          if (targetDate == null && payload['date'] is String) {
+            targetDate = DateTime.parse(payload['date'] as String);
+          }
+
+          if (targetDate != null) {
+            provider.setCurrentMonth(DateTime(targetDate.year, targetDate.month));
+            provider.setSelectedDate(targetDate);
+            widget.onJumpToMonth?.call();
+          }
+          break;
         case 'tool_request':
           break;
         case 'add_event':
