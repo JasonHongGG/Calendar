@@ -80,6 +80,15 @@ class _MonthViewPageState extends State<MonthViewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentMonth = context.watch<EventProvider>().currentMonth;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final targetIndex = _calculateIndex(currentMonth);
+      if (_pageController.hasClients && _pageController.page?.round() != targetIndex) {
+        _pageController.jumpToPage(targetIndex);
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -89,27 +98,22 @@ class _MonthViewPageState extends State<MonthViewPage> {
             // Header: Only this part needs to rebuild when month changes
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppDimens.spacingNormal),
-              child: Consumer<EventProvider>(
-                builder: (context, provider, child) {
-                  final currentMonth = provider.currentMonth;
-                  return CalendarHeader(
-                    title: '${currentMonth.year}/${currentMonth.month.toString().padLeft(2, '0')}',
-                    onPrevious: () {
-                      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                    },
-                    onNext: () {
-                      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-                    },
-                    onTitleTap: () => _showDateSelector(context, currentMonth),
-                    onTodayTap: () {
-                      final now = DateTime.now();
-                      final index = _calculateIndex(now);
-                      _pageController.jumpToPage(index);
-                    },
-                    onSettings: () {
-                      Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(builder: (_) => const SettingsPage()));
-                    },
-                  );
+              child: CalendarHeader(
+                title: '${currentMonth.year}/${currentMonth.month.toString().padLeft(2, '0')}',
+                onPrevious: () {
+                  _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                },
+                onNext: () {
+                  _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                },
+                onTitleTap: () => _showDateSelector(context, currentMonth),
+                onTodayTap: () {
+                  final now = DateTime.now();
+                  final index = _calculateIndex(now);
+                  _pageController.jumpToPage(index);
+                },
+                onSettings: () {
+                  Navigator.of(context, rootNavigator: true).push(MaterialPageRoute(builder: (_) => const SettingsPage()));
                 },
               ),
             ),

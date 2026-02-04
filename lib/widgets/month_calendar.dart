@@ -247,8 +247,8 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     final weekEvents = <_WeekEventData>[];
 
     for (final event in allEvents) {
-      final eventStartLocal = event.startDate.toLocal();
-      final eventEndLocal = event.endDate.toLocal();
+      final eventStartLocal = event.isAllDay ? event.startDate : event.startDate.toLocal();
+      final eventEndLocal = event.isAllDay ? event.normalizedEndDate : event.normalizedEndDate.toLocal();
 
       final eventStart = CalendarDateUtils.dateOnly(eventStartLocal);
       final eventEnd = CalendarDateUtils.dateOnly(eventEndLocal);

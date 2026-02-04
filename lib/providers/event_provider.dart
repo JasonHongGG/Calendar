@@ -129,7 +129,7 @@ class EventProvider extends ChangeNotifier {
 
     return _events.where((event) {
       final startOnly = CalendarDateUtils.dateOnly(event.startDate);
-      final endOnly = CalendarDateUtils.dateOnly(event.endDate);
+      final endOnly = CalendarDateUtils.dateOnly(event.normalizedEndDate);
 
       // 事件與月份有交集
       return !endOnly.isBefore(firstDay) && !startOnly.isAfter(lastDay);

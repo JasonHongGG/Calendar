@@ -217,6 +217,13 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
     return '$year-$month-$day';
   }
 
+  bool _shouldNormalizeAllDayEndDate(DateTime startDate, DateTime endDate) {
+    final startOnly = DateTime(startDate.year, startDate.month, startDate.day);
+    final endOnly = DateTime(endDate.year, endDate.month, endDate.day);
+    final isMidnight = endDate.hour == 0 && endDate.minute == 0 && endDate.second == 0 && endDate.millisecond == 0 && endDate.microsecond == 0;
+    return isMidnight && endOnly.difference(startOnly).inDays == 1;
+  }
+
   List<Event> _filterEvents(List<Event> events, DateTime? start, DateTime? end) {
     if (start == null || end == null) return events;
     return events.where((event) {
@@ -267,15 +274,13 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
         case 'add_event':
           final reminderEnabled = action.payload['reminderEnabled'] as bool? ?? false;
           final reminderTime = action.payload['reminderTime'] != null ? DateTime.parse(action.payload['reminderTime'] as String) : null;
-          await provider.addEvent(
-            title: action.payload['title'] as String? ?? '未命名事件',
-            startDate: DateTime.parse(action.payload['startDate'] as String? ?? DateTime.now().toIso8601String()),
-            endDate: DateTime.parse(action.payload['endDate'] as String? ?? DateTime.now().toIso8601String()),
-            isAllDay: action.payload['isAllDay'] as bool? ?? true,
-            colorIndex: action.payload['colorIndex'] as int? ?? 0,
-            description: action.payload['description'] as String?,
-            reminderTime: reminderEnabled ? reminderTime : null,
-          );
+          final startDate = DateTime.parse(action.payload['startDate'] as String? ?? DateTime.now().toIso8601String());
+          var endDate = DateTime.parse(action.payload['endDate'] as String? ?? DateTime.now().toIso8601String());
+          final isAllDay = action.payload['isAllDay'] as bool? ?? true;
+          if (isAllDay && _shouldNormalizeAllDayEndDate(startDate, endDate)) {
+            endDate = startDate;
+          }
+          await provider.addEvent(title: action.payload['title'] as String? ?? '未命名事件', startDate: startDate, endDate: endDate, isAllDay: isAllDay, colorIndex: action.payload['colorIndex'] as int? ?? 0, description: action.payload['description'] as String?, reminderTime: reminderEnabled ? reminderTime : null);
           break;
         case 'delete_event':
           final id = action.payload['id'] as String?;
@@ -291,15 +296,13 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
           final reminderEnabled = action.payload['reminderEnabled'] as bool?;
           final reminderTime = action.payload['reminderTime'] != null ? DateTime.parse(action.payload['reminderTime'] as String) : null;
           final resolvedReminderTime = reminderEnabled == null ? (action.payload['reminderTime'] != null ? reminderTime : existing.reminderTime) : (reminderEnabled ? (reminderTime ?? existing.reminderTime) : null);
-          final updated = existing.copyWith(
-            title: action.payload['title'] as String? ?? existing.title,
-            startDate: action.payload['startDate'] != null ? DateTime.parse(action.payload['startDate'] as String) : existing.startDate,
-            endDate: action.payload['endDate'] != null ? DateTime.parse(action.payload['endDate'] as String) : existing.endDate,
-            isAllDay: action.payload['isAllDay'] as bool? ?? existing.isAllDay,
-            colorIndex: action.payload['colorIndex'] as int? ?? existing.colorIndex,
-            description: action.payload['description'] as String? ?? existing.description,
-            reminderTime: resolvedReminderTime,
-          );
+          final resolvedStartDate = action.payload['startDate'] != null ? DateTime.parse(action.payload['startDate'] as String) : existing.startDate;
+          var resolvedEndDate = action.payload['endDate'] != null ? DateTime.parse(action.payload['endDate'] as String) : existing.endDate;
+          final resolvedIsAllDay = action.payload['isAllDay'] as bool? ?? existing.isAllDay;
+          if (resolvedIsAllDay && _shouldNormalizeAllDayEndDate(resolvedStartDate, resolvedEndDate)) {
+            resolvedEndDate = resolvedStartDate;
+          }
+          final updated = existing.copyWith(title: action.payload['title'] as String? ?? existing.title, startDate: resolvedStartDate, endDate: resolvedEndDate, isAllDay: resolvedIsAllDay, colorIndex: action.payload['colorIndex'] as int? ?? existing.colorIndex, description: action.payload['description'] as String? ?? existing.description, reminderTime: resolvedReminderTime);
           await provider.updateEvent(updated);
           break;
         case 'toggle_reminder':
