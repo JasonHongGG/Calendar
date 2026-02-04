@@ -167,6 +167,7 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
 
   Widget _buildSendButton(AiCommandProvider aiProvider) {
     final child = aiProvider.sending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white)) : const Icon(Icons.send_rounded, size: 18, color: Colors.white);
+    final borderRadius = BorderRadius.circular(16);
 
     return IgnorePointer(
       ignoring: aiProvider.sending,
@@ -175,15 +176,17 @@ class _AiCommandSheetState extends State<AiCommandSheet> {
         opacity: aiProvider.sending ? 0.6 : 1,
         child: Material(
           color: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: borderRadius),
+          clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () => _submit(aiProvider),
-            borderRadius: BorderRadius.circular(16),
+            customBorder: RoundedRectangleBorder(borderRadius: borderRadius),
             child: Ink(
               width: 44,
               height: 44,
               decoration: BoxDecoration(
                 gradient: AppColors.primaryGradient,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: borderRadius,
                 boxShadow: [BoxShadow(color: AppColors.gradientStart.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 6))],
               ),
               child: Center(child: child),
