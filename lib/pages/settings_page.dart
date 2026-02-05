@@ -120,6 +120,10 @@ class _SettingsPageState extends State<SettingsPage> {
         return '淺色';
       case EventColorTone.lightest:
         return '最淺';
+      case EventColorTone.lighter:
+        return '更淺';
+      case EventColorTone.palest:
+        return '極淺';
     }
   }
 

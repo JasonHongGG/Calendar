@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum EventColorTone { normal, light, lightest }
+enum EventColorTone { normal, light, lightest, lighter, palest }
 
 /// 應用程式色彩定義
 class AppColors {
@@ -83,6 +83,12 @@ class AppColors {
     'grayblue': Color(0xFFE2E8F0),
   };
 
+  // lighter: 100
+  static const Map<String, Color> eventColorsLighter = {'red': Color(0xFFFEE2E2), 'orange': Color(0xFFFFEDD5), 'yellow': Color(0xFFFEF9C3), 'lime': Color(0xFFECFCCB), 'green': Color(0xFFD1FAE5), 'cyan': Color(0xFFCFFAFE), 'blue': Color(0xFFDBEAFE), 'indigo': Color(0xFFE0E7FF), 'purple': Color(0xFFEDE9FE), 'magenta': Color(0xFFFAE8FF), 'pink': Color(0xFFFCE7F3), 'grayblue': Color(0xFFF1F5F9)};
+
+  // palest: 50
+  static const Map<String, Color> eventColorsPalest = {'red': Color(0xFFFEF2F2), 'orange': Color(0xFFFFF7ED), 'yellow': Color(0xFFFEFCF3), 'lime': Color(0xFFF7FEE7), 'green': Color(0xFFECFDF5), 'cyan': Color(0xFFECFEFF), 'blue': Color(0xFFEFF6FF), 'indigo': Color(0xFFEEF2FF), 'purple': Color(0xFFF5F3FF), 'magenta': Color(0xFFFDF4FF), 'pink': Color(0xFFFDF2F8), 'grayblue': Color(0xFFF8FAFC)};
+
   static const Set<String> _disabledEventColorKeys = {'lime', 'grayblue'};
 
   static List<String> get selectableEventColorKeys {
@@ -99,6 +105,8 @@ class AppColors {
       EventColorTone.normal => eventColorsNormal,
       EventColorTone.light => eventColorsLight,
       EventColorTone.lightest => eventColorsLightest,
+      EventColorTone.lighter => eventColorsLighter,
+      EventColorTone.palest => eventColorsPalest,
     };
     return palette[colorKey] ?? palette['red']!;
   }
