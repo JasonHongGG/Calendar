@@ -34,6 +34,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
   String? _selectedColorKey;
 
   bool _isColorPickerExpanded = false;
+  bool _isCompleted = false;
 
   bool get _isEditing => widget.editEvent != null;
 
@@ -52,6 +53,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
       _startDate = event.startDate;
       _endDate = event.endDate;
       _selectedColorKey = event.colorKey.isNotEmpty ? event.colorKey : 'red';
+      _isCompleted = event.isCompleted;
 
       if (event.reminderTime != null) {
         _reminderEnabledNotifier.value = true;
@@ -66,6 +68,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
       _startDate = initialDate;
       _endDate = initialDate;
       _selectedColorKey = null; // 預設隨機
+      _isCompleted = false;
 
       // 預設為開始日期的 00:00
       _reminderTimeNotifier.value = DateTime(_startDate.year, _startDate.month, _startDate.day);
@@ -138,6 +141,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
                         Row(
                           children: [
                             _buildNoteButton(),
+                            _buildCompleteButton(),
                             if (_isEditing)
                               IconButton(
                                 onPressed: _deleteEvent,
@@ -182,6 +186,21 @@ class _AddEventSheetState extends State<AddEventSheet> {
       icon: Icon(hasNote ? Icons.sticky_note_2_rounded : Icons.sticky_note_2_outlined, color: hasNote ? AppColors.gradientStart : AppColors.textTertiary, size: 26),
       style: IconButton.styleFrom(backgroundColor: hasNote ? AppColors.gradientStart.withValues(alpha: 0.12) : AppColors.background, padding: const EdgeInsets.all(8)),
       tooltip: '備註',
+    );
+  }
+
+  Widget _buildCompleteButton() {
+    const completedColor = Color(0xFF22C55E);
+    final isActive = _isCompleted;
+    return IconButton(
+      onPressed: () {
+        setState(() {
+          _isCompleted = !_isCompleted;
+        });
+      },
+      icon: Icon(isActive ? Icons.check_circle_rounded : Icons.check_circle_outline_rounded, color: isActive ? completedColor : AppColors.textTertiary, size: 28),
+      style: IconButton.styleFrom(backgroundColor: isActive ? completedColor.withValues(alpha: 0.12) : AppColors.background, padding: const EdgeInsets.all(8)),
+      tooltip: '已完成',
     );
   }
 
@@ -261,7 +280,7 @@ class _AddEventSheetState extends State<AddEventSheet> {
     return _ReminderSection(startDate: _startDate, reminderEnabledNotifier: _reminderEnabledNotifier, reminderTimeNotifier: _reminderTimeNotifier);
   }
 
-  void _saveEvent() {
+  Future<void> _saveEvent() async {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = Provider.of<EventProvider>(context, listen: false);
@@ -291,10 +310,10 @@ class _AddEventSheetState extends State<AddEventSheet> {
     }
 
     if (_isEditing) {
-      final updatedEvent = widget.editEvent!.copyWith(title: _titleController.text.trim(), startDate: startDateTime, endDate: endDateTime, isAllDay: true, colorKey: finalColorKey, description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(), reminderTime: reminderToSave);
-      provider.updateEvent(updatedEvent);
+      final updatedEvent = widget.editEvent!.copyWith(title: _titleController.text.trim(), startDate: startDateTime, endDate: endDateTime, isAllDay: true, colorKey: finalColorKey, isCompleted: _isCompleted, description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(), reminderTime: reminderToSave);
+      await provider.updateEvent(updatedEvent);
     } else {
-      provider.addEvent(title: _titleController.text.trim(), startDate: startDateTime, endDate: endDateTime, isAllDay: true, colorKey: finalColorKey, description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(), reminderTime: reminderToSave);
+      await provider.addEvent(title: _titleController.text.trim(), startDate: startDateTime, endDate: endDateTime, isAllDay: true, colorKey: finalColorKey, isCompleted: _isCompleted, description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(), reminderTime: reminderToSave);
     }
 
     if (context.mounted && reminderToSave != null) {

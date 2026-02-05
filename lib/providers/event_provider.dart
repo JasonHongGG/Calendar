@@ -76,9 +76,9 @@ class EventProvider extends ChangeNotifier {
   }
 
   /// 新增事件
-  Future<void> addEvent({required String title, required DateTime startDate, required DateTime endDate, bool isAllDay = false, required String colorKey, String? location, String? description, DateTime? reminderTime}) async {
+  Future<void> addEvent({required String title, required DateTime startDate, required DateTime endDate, bool isAllDay = false, required String colorKey, bool isCompleted = false, String? location, String? description, DateTime? reminderTime}) async {
     final nextOrder = _nextSortOrderForDate(startDate);
-    final event = Event(id: _uuid.v4(), title: title, startDate: startDate, endDate: endDate, isAllDay: isAllDay, colorKey: colorKey, sortOrder: nextOrder, location: location, description: description, reminderTime: reminderTime);
+    final event = Event(id: _uuid.v4(), title: title, startDate: startDate, endDate: endDate, isAllDay: isAllDay, colorKey: colorKey, sortOrder: nextOrder, isCompleted: isCompleted, location: location, description: description, reminderTime: reminderTime);
 
     await _eventsBox?.put(event.id, event);
 

@@ -77,6 +77,12 @@ class EventCard extends StatelessWidget {
                   ),
                 ),
 
+                if (event.isCompleted)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Icon(Icons.check_circle_rounded, color: AppColors.gradientStart, size: 20),
+                  ),
+
                 // 3. 刪除按鈕
                 if (onDelete != null)
                   Padding(

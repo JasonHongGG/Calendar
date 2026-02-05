@@ -74,7 +74,7 @@ class _SchedulePageState extends State<SchedulePage> {
                   final provider = context.read<EventProvider>();
                   final groupedEvents = _getGroupedEvents(provider);
 
-                  return _buildEventsList(groupedEvents);
+                  return _buildEventsList(context, groupedEvents);
                 },
               ),
             ),
@@ -95,11 +95,13 @@ class _SchedulePageState extends State<SchedulePage> {
     return grouped;
   }
 
-  Widget _buildEventsList(Map<DateTime, List<Event>> groupedEvents) {
+  Widget _buildEventsList(BuildContext context, Map<DateTime, List<Event>> groupedEvents) {
     final entries = groupedEvents.entries.toList();
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final bottomPadding = AppDimens.spacingLarge + bottomInset + 96.0;
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(AppDimens.spacingNormal, AppDimens.spacingNormal, AppDimens.spacingNormal, AppDimens.spacingNormal),
+      padding: EdgeInsets.fromLTRB(AppDimens.spacingNormal, AppDimens.spacingNormal, AppDimens.spacingNormal, bottomPadding),
       itemCount: entries.length,
       itemBuilder: (context, index) {
         final entry = entries[index];
