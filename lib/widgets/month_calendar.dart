@@ -265,7 +265,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
           span = 7 - startOffset;
         }
 
-        weekEvents.add(_WeekEventData(event: event, startOffset: startOffset, span: span, isStart: CalendarDateUtils.isSameDay(eventStart, displayStart), isEnd: CalendarDateUtils.isSameDay(eventEnd, displayEnd), sortKey: startOffset * 100 - span));
+        weekEvents.add(_WeekEventData(event: event, startOffset: startOffset, span: span, isStart: CalendarDateUtils.isSameDay(eventStart, displayStart), isEnd: CalendarDateUtils.isSameDay(eventEnd, displayEnd), sortKey: startOffset * 100 - span, sortOrder: event.sortOrder));
       }
     }
 
@@ -273,6 +273,8 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
       if (a.startOffset != b.startOffset) {
         return a.startOffset.compareTo(b.startOffset);
       }
+      final orderCompare = a.sortOrder.compareTo(b.sortOrder);
+      if (orderCompare != 0) return orderCompare;
       return b.span.compareTo(a.span);
     });
 
@@ -459,8 +461,9 @@ class _WeekEventData {
   final bool isStart;
   final bool isEnd;
   final int sortKey;
+  final int sortOrder;
 
-  _WeekEventData({required this.event, required this.startOffset, required this.span, required this.isStart, required this.isEnd, required this.sortKey});
+  _WeekEventData({required this.event, required this.startOffset, required this.span, required this.isStart, required this.isEnd, required this.sortKey, required this.sortOrder});
 }
 
 class _WeekEventLayout {

@@ -16,15 +16,22 @@ class WeeklyViewPage extends StatefulWidget {
 }
 
 class _WeeklyViewPageState extends State<WeeklyViewPage> {
+  DateTime _weekAnchor = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _weekAnchor = DateTime.now();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Only rebuild if selectedDate or events list changes
-    final selectedDate = context.select<EventProvider, DateTime>((p) => p.selectedDate);
-    // Access provider for methods (read is fine since we select what we need)
+    // Rebuild when events change (including reordering)
+    context.select<EventProvider, int>((p) => p.eventsVersion);
     final provider = context.read<EventProvider>();
 
     // 計算該週的每一天 (假設週一為第一天)
-    final daysOfWeek = _getDaysInWeek(selectedDate);
+    final daysOfWeek = _getDaysInWeek(_weekAnchor);
     final title = CalendarDateUtils.formatDateRange(daysOfWeek.first, daysOfWeek.last);
 
     return Scaffold(
@@ -34,7 +41,7 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
           children: [
             const SizedBox(height: 16),
             // 標題區
-            _buildHeader(provider, title),
+            _buildHeader(title),
             const SizedBox(height: 10),
 
             // 週視圖列表
@@ -55,7 +62,7 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
     );
   }
 
-  Widget _buildHeader(EventProvider provider, String title) {
+  Widget _buildHeader(String title) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -70,7 +77,9 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
           IconButton(
             onPressed: () {
               // 上一週
-              provider.setSelectedDate(provider.selectedDate.subtract(const Duration(days: 7)));
+              setState(() {
+                _weekAnchor = _weekAnchor.subtract(const Duration(days: 7));
+              });
             },
             icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
             style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.2), padding: const EdgeInsets.all(8)),
@@ -83,7 +92,11 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
               ),
               const SizedBox(height: 4),
               GestureDetector(
-                onTap: () => provider.goToToday(),
+                onTap: () {
+                  setState(() {
+                    _weekAnchor = DateTime.now();
+                  });
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                   decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
@@ -95,7 +108,9 @@ class _WeeklyViewPageState extends State<WeeklyViewPage> {
           IconButton(
             onPressed: () {
               // 下一週
-              provider.setSelectedDate(provider.selectedDate.add(const Duration(days: 7)));
+              setState(() {
+                _weekAnchor = _weekAnchor.add(const Duration(days: 7));
+              });
             },
             icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
             style: IconButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.2), padding: const EdgeInsets.all(8)),

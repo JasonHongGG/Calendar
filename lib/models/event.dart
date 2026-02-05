@@ -24,6 +24,9 @@ class Event extends HiveObject {
   @HiveField(9)
   String colorKey;
 
+  @HiveField(10)
+  int sortOrder;
+
   @HiveField(6)
   String? location;
 
@@ -33,10 +36,10 @@ class Event extends HiveObject {
   @HiveField(8)
   DateTime? reminderTime;
 
-  Event({required this.id, required this.title, required this.startDate, required this.endDate, this.isAllDay = false, String? colorKey, this.location, this.description, this.reminderTime}) : colorKey = (colorKey != null && colorKey.isNotEmpty) ? colorKey : 'red';
+  Event({required this.id, required this.title, required this.startDate, required this.endDate, this.isAllDay = false, String? colorKey, int? sortOrder, this.location, this.description, this.reminderTime}) : colorKey = (colorKey != null && colorKey.isNotEmpty) ? colorKey : 'red', sortOrder = sortOrder ?? 0;
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'title': title, 'startDate': startDate.toIso8601String(), 'endDate': endDate.toIso8601String(), 'isAllDay': isAllDay, 'colorKey': colorKey, 'location': location, 'description': description, 'reminderTime': reminderTime?.toIso8601String()};
+    return {'id': id, 'title': title, 'startDate': startDate.toIso8601String(), 'endDate': endDate.toIso8601String(), 'isAllDay': isAllDay, 'colorKey': colorKey, 'sortOrder': sortOrder, 'location': location, 'description': description, 'reminderTime': reminderTime?.toIso8601String()};
   }
 
   static Event fromJson(Map<String, dynamic> json) {
@@ -52,13 +55,14 @@ class Event extends HiveObject {
 
     final isAllDayRaw = json['isAllDay'];
     final colorKeyRaw = json['colorKey'];
+    final sortOrderRaw = json['sortOrder'];
     final locationRaw = json['location'];
     final descriptionRaw = json['description'];
     final reminderRaw = json['reminderTime'];
 
     final parsedColorKey = colorKeyRaw is String && colorKeyRaw.isNotEmpty ? colorKeyRaw : 'red';
 
-    return Event(id: id, title: title, startDate: startDate ?? DateTime.now(), endDate: endDate ?? (startDate ?? DateTime.now()), isAllDay: isAllDayRaw is bool ? isAllDayRaw : false, colorKey: parsedColorKey, location: locationRaw is String ? locationRaw : null, description: descriptionRaw is String ? descriptionRaw : null, reminderTime: reminderRaw is String ? DateTime.tryParse(reminderRaw) : null);
+    return Event(id: id, title: title, startDate: startDate ?? DateTime.now(), endDate: endDate ?? (startDate ?? DateTime.now()), isAllDay: isAllDayRaw is bool ? isAllDayRaw : false, colorKey: parsedColorKey, sortOrder: sortOrderRaw is int ? sortOrderRaw : 0, location: locationRaw is String ? locationRaw : null, description: descriptionRaw is String ? descriptionRaw : null, reminderTime: reminderRaw is String ? DateTime.tryParse(reminderRaw) : null);
   }
 
   /// 檢查事件是否在指定日期
@@ -102,8 +106,8 @@ class Event extends HiveObject {
   }
 
   /// 複製事件
-  Event copyWith({String? id, String? title, DateTime? startDate, DateTime? endDate, bool? isAllDay, String? colorKey, String? location, String? description, DateTime? reminderTime}) {
+  Event copyWith({String? id, String? title, DateTime? startDate, DateTime? endDate, bool? isAllDay, String? colorKey, int? sortOrder, String? location, String? description, DateTime? reminderTime}) {
     final nextColorKey = colorKey ?? this.colorKey;
-    return Event(id: id ?? this.id, title: title ?? this.title, startDate: startDate ?? this.startDate, endDate: endDate ?? this.endDate, isAllDay: isAllDay ?? this.isAllDay, colorKey: nextColorKey, location: location ?? this.location, description: description ?? this.description, reminderTime: reminderTime ?? this.reminderTime);
+    return Event(id: id ?? this.id, title: title ?? this.title, startDate: startDate ?? this.startDate, endDate: endDate ?? this.endDate, isAllDay: isAllDay ?? this.isAllDay, colorKey: nextColorKey, sortOrder: sortOrder ?? this.sortOrder, location: location ?? this.location, description: description ?? this.description, reminderTime: reminderTime ?? this.reminderTime);
   }
 }

@@ -77,7 +77,8 @@ class EventProvider extends ChangeNotifier {
 
   /// 新增事件
   Future<void> addEvent({required String title, required DateTime startDate, required DateTime endDate, bool isAllDay = false, required String colorKey, String? location, String? description, DateTime? reminderTime}) async {
-    final event = Event(id: _uuid.v4(), title: title, startDate: startDate, endDate: endDate, isAllDay: isAllDay, colorKey: colorKey, location: location, description: description, reminderTime: reminderTime);
+    final nextOrder = _nextSortOrderForDate(startDate);
+    final event = Event(id: _uuid.v4(), title: title, startDate: startDate, endDate: endDate, isAllDay: isAllDay, colorKey: colorKey, sortOrder: nextOrder, location: location, description: description, reminderTime: reminderTime);
 
     await _eventsBox?.put(event.id, event);
 
@@ -162,7 +163,45 @@ class EventProvider extends ChangeNotifier {
 
   /// 取得指定日期的事件
   List<Event> getEventsForDate(DateTime date) {
-    return _events.where((event) => event.isOnDate(date)).toList();
+    final list = _events.where((event) => event.isOnDate(date)).toList();
+    list.sort((a, b) {
+      final orderCompare = a.sortOrder.compareTo(b.sortOrder);
+      if (orderCompare != 0) return orderCompare;
+      return a.startDate.compareTo(b.startDate);
+    });
+    return list;
+  }
+
+  Future<void> updateEventOrderForDate(DateTime date, List<String> orderedIds) async {
+    if (_eventsBox == null) return;
+
+    final byId = {for (final event in _events) event.id: event};
+    final idSet = orderedIds.toSet();
+    final remaining = _events.where((event) => event.isOnDate(date) && !idSet.contains(event.id)).toList();
+
+    var order = 0;
+    for (final id in orderedIds) {
+      final event = byId[id];
+      if (event == null) continue;
+      event.sortOrder = order;
+      order += 1;
+      await _eventsBox!.put(event.id, event);
+    }
+
+    for (final event in remaining) {
+      event.sortOrder = order;
+      order += 1;
+      await _eventsBox!.put(event.id, event);
+    }
+
+    _loadEvents();
+  }
+
+  int _nextSortOrderForDate(DateTime date) {
+    final list = _events.where((event) => event.isOnDate(date)).toList();
+    if (list.isEmpty) return 0;
+    final maxOrder = list.map((e) => e.sortOrder).reduce((a, b) => a > b ? a : b);
+    return maxOrder + 1;
   }
 
   int _notificationIdForEventId(String eventId) {
@@ -200,7 +239,20 @@ class EventProvider extends ChangeNotifier {
 
   /// 取得指定日期的事件顏色（用於日曆上的小圓點）
   List<String> getEventColorsForDate(DateTime date) {
-    return _events.where((event) => event.isOnDate(date)).map((event) => event.colorKey).toSet().toList();
+    final list = _events.where((event) => event.isOnDate(date)).toList();
+    list.sort((a, b) {
+      final orderCompare = a.sortOrder.compareTo(b.sortOrder);
+      if (orderCompare != 0) return orderCompare;
+      return a.startDate.compareTo(b.startDate);
+    });
+    final seen = <String>{};
+    final ordered = <String>[];
+    for (final event in list) {
+      if (seen.add(event.colorKey)) {
+        ordered.add(event.colorKey);
+      }
+    }
+    return ordered;
   }
 
   /// 取得即將到來的事件（從今天開始的 7 天內）
