@@ -161,7 +161,7 @@ class AiCommandProvider extends ChangeNotifier {
   }
 
   Map<String, dynamic> _eventToToolJson(Event event) {
-    return {'id': event.id, 'title': event.title, 'startDate': event.startDate.toIso8601String(), 'endDate': event.endDate.toIso8601String(), 'isAllDay': event.isAllDay, 'colorIndex': event.colorIndex, 'description': event.description, 'reminderTime': event.reminderTime?.toIso8601String()};
+    return {'id': event.id, 'title': event.title, 'startDate': event.startDate.toIso8601String(), 'endDate': event.endDate.toIso8601String(), 'isAllDay': event.isAllDay, 'colorKey': event.colorKey, 'description': event.description, 'reminderTime': event.reminderTime?.toIso8601String()};
   }
 
   Future<void> _applyAiActions(List<AiAction> actions, String? message, EventProvider provider, VoidCallback? onJumpToMonth) async {
@@ -205,7 +205,9 @@ class AiCommandProvider extends ChangeNotifier {
           if (isAllDay && _shouldNormalizeAllDayEndDate(startDate, endDate)) {
             endDate = startDate;
           }
-          await provider.addEvent(title: action.payload['title'] as String? ?? '未命名事件', startDate: startDate, endDate: endDate, isAllDay: isAllDay, colorIndex: action.payload['colorIndex'] as int? ?? 0, description: action.payload['description'] as String?, reminderTime: reminderEnabled ? reminderTime : null);
+          final colorKeyRaw = action.payload['colorKey'];
+          final colorKey = colorKeyRaw is String && colorKeyRaw.isNotEmpty ? colorKeyRaw : 'red';
+          await provider.addEvent(title: action.payload['title'] as String? ?? '未命名事件', startDate: startDate, endDate: endDate, isAllDay: isAllDay, colorKey: colorKey, description: action.payload['description'] as String?, reminderTime: reminderEnabled ? reminderTime : null);
           break;
         case 'delete_event':
           final id = action.payload['id'] as String?;
@@ -227,7 +229,9 @@ class AiCommandProvider extends ChangeNotifier {
           if (resolvedIsAllDay && _shouldNormalizeAllDayEndDate(resolvedStartDate, resolvedEndDate)) {
             resolvedEndDate = resolvedStartDate;
           }
-          final updated = existing.copyWith(title: action.payload['title'] as String? ?? existing.title, startDate: resolvedStartDate, endDate: resolvedEndDate, isAllDay: resolvedIsAllDay, colorIndex: action.payload['colorIndex'] as int? ?? existing.colorIndex, description: action.payload['description'] as String? ?? existing.description, reminderTime: resolvedReminderTime);
+          final colorKeyRaw = action.payload['colorKey'];
+          final colorKey = colorKeyRaw is String && colorKeyRaw.isNotEmpty ? colorKeyRaw : existing.colorKey;
+          final updated = existing.copyWith(title: action.payload['title'] as String? ?? existing.title, startDate: resolvedStartDate, endDate: resolvedEndDate, isAllDay: resolvedIsAllDay, colorKey: colorKey, description: action.payload['description'] as String? ?? existing.description, reminderTime: resolvedReminderTime);
           await provider.updateEvent(updated);
           break;
         case 'toggle_reminder':

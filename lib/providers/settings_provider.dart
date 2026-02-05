@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+
 enum MonthEventTitleSize { medium, large, xlarge }
 
-enum MonthEventBarStyle { solid, highlighter }
-
 class SettingsProvider extends ChangeNotifier {
-  MonthEventTitleSize _monthEventTitleSize = MonthEventTitleSize.medium;
-  MonthEventBarStyle _monthEventBarStyle = MonthEventBarStyle.solid;
+  MonthEventTitleSize _monthEventTitleSize = MonthEventTitleSize.xlarge;
+  EventColorTone _eventColorTone = EventColorTone.normal;
   bool _aiEnabled = true;
   String _aiBaseUrl = 'https://calendar.alberthongtunnel.dpdns.org';
 
   MonthEventTitleSize get monthEventTitleSize => _monthEventTitleSize;
-  MonthEventBarStyle get monthEventBarStyle => _monthEventBarStyle;
+  EventColorTone get eventColorTone => _eventColorTone;
   bool get aiEnabled => _aiEnabled;
   String get aiBaseUrl => _aiBaseUrl;
-
-  bool get monthEventUseHighlighterStyle => _monthEventBarStyle == MonthEventBarStyle.highlighter;
 
   void setMonthEventTitleSize(MonthEventTitleSize size) {
     if (_monthEventTitleSize == size) return;
@@ -23,9 +21,9 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setMonthEventBarStyle(MonthEventBarStyle style) {
-    if (_monthEventBarStyle == style) return;
-    _monthEventBarStyle = style;
+  void setEventColorTone(EventColorTone tone) {
+    if (_eventColorTone == tone) return;
+    _eventColorTone = tone;
     notifyListeners();
   }
 
@@ -42,14 +40,14 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void applyBackup({MonthEventTitleSize? monthEventTitleSize, MonthEventBarStyle? monthEventBarStyle, bool? aiEnabled, String? aiBaseUrl}) {
+  void applyBackup({MonthEventTitleSize? monthEventTitleSize, EventColorTone? eventColorTone, bool? aiEnabled, String? aiBaseUrl}) {
     var changed = false;
     if (monthEventTitleSize != null && _monthEventTitleSize != monthEventTitleSize) {
       _monthEventTitleSize = monthEventTitleSize;
       changed = true;
     }
-    if (monthEventBarStyle != null && _monthEventBarStyle != monthEventBarStyle) {
-      _monthEventBarStyle = monthEventBarStyle;
+    if (eventColorTone != null && _eventColorTone != eventColorTone) {
+      _eventColorTone = eventColorTone;
       changed = true;
     }
     if (aiEnabled != null && _aiEnabled != aiEnabled) {

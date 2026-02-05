@@ -76,8 +76,8 @@ class EventProvider extends ChangeNotifier {
   }
 
   /// 新增事件
-  Future<void> addEvent({required String title, required DateTime startDate, required DateTime endDate, bool isAllDay = false, int colorIndex = 0, String? location, String? description, DateTime? reminderTime}) async {
-    final event = Event(id: _uuid.v4(), title: title, startDate: startDate, endDate: endDate, isAllDay: isAllDay, colorIndex: colorIndex, location: location, description: description, reminderTime: reminderTime);
+  Future<void> addEvent({required String title, required DateTime startDate, required DateTime endDate, bool isAllDay = false, required String colorKey, String? location, String? description, DateTime? reminderTime}) async {
+    final event = Event(id: _uuid.v4(), title: title, startDate: startDate, endDate: endDate, isAllDay: isAllDay, colorKey: colorKey, location: location, description: description, reminderTime: reminderTime);
 
     await _eventsBox?.put(event.id, event);
 
@@ -199,8 +199,8 @@ class EventProvider extends ChangeNotifier {
   }
 
   /// 取得指定日期的事件顏色（用於日曆上的小圓點）
-  List<int> getEventColorsForDate(DateTime date) {
-    return _events.where((event) => event.isOnDate(date)).map((event) => event.colorIndex).toSet().toList();
+  List<String> getEventColorsForDate(DateTime date) {
+    return _events.where((event) => event.isOnDate(date)).map((event) => event.colorKey).toSet().toList();
   }
 
   /// 取得即將到來的事件（從今天開始的 7 天內）

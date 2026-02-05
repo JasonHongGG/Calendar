@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -11,7 +13,7 @@ class DayCell extends StatelessWidget {
   final DateTime currentMonth;
   final bool isSelected;
   final bool isToday;
-  final List<int> eventColors;
+  final List<String> eventColors;
   final VoidCallback? onTap;
   final bool isCompact;
 
@@ -70,7 +72,7 @@ class DayCell extends StatelessWidget {
             // 農曆日期
             if (!isCompact && _isInMonth) ...[Text(LunarUtils.getLunarText(date), style: AppTextStyles.lunarDate, maxLines: 1, overflow: TextOverflow.visible)],
             // 事件指示點 (僅在 compact 模式顯示)
-            if (eventColors.isNotEmpty && isCompact) ...[const SizedBox(height: AppDimens.spacingTiny / 2), _buildCompactEventDots()],
+            if (eventColors.isNotEmpty && isCompact) ...[const SizedBox(height: AppDimens.spacingTiny / 2), _buildCompactEventDots(context)],
           ],
         ),
       ),
@@ -89,12 +91,13 @@ class DayCell extends StatelessWidget {
     return _dayColor;
   }
 
-  Widget _buildCompactEventDots() {
+  Widget _buildCompactEventDots(BuildContext context) {
+    final tone = context.select<SettingsProvider, EventColorTone>((s) => s.eventColorTone);
     final displayColors = eventColors.take(3).toList();
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: displayColors.map((colorIndex) {
-        final color = AppColors.eventColors[colorIndex % AppColors.eventColors.length];
+      children: displayColors.map((colorKey) {
+        final color = AppColors.eventColor(colorKey, tone: tone);
         return Container(
           width: 4,
           height: 4,

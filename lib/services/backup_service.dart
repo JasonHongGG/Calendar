@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/event.dart';
 import '../providers/settings_provider.dart';
+import '../theme/app_colors.dart';
 
 class CalendarBackup {
   CalendarBackup({required this.version, required this.exportedAt, required this.settings, required this.events});
@@ -64,7 +65,7 @@ class CalendarBackup {
 
 class BackupCodec {
   static Map<String, dynamic> settingsToJson(SettingsProvider settings) {
-    return {'monthEventTitleSize': settings.monthEventTitleSize.name, 'monthEventBarStyle': settings.monthEventBarStyle.name, 'aiEnabled': settings.aiEnabled, 'aiBaseUrl': settings.aiBaseUrl};
+    return {'monthEventTitleSize': settings.monthEventTitleSize.name, 'eventColorTone': settings.eventColorTone.name, 'aiEnabled': settings.aiEnabled, 'aiBaseUrl': settings.aiBaseUrl};
   }
 
   static void applySettingsFromJson(SettingsProvider settings, Map<String, dynamic> json) {
@@ -87,20 +88,20 @@ class BackupCodec {
     final aiBaseUrlRaw = json['aiBaseUrl'];
     final String? aiBaseUrl = aiBaseUrlRaw is String ? aiBaseUrlRaw : null;
 
-    final barStyleRaw = json['monthEventBarStyle'];
-    final barStyleName = barStyleRaw is String ? barStyleRaw : null;
+    final toneRaw = json['eventColorTone'];
+    final toneName = toneRaw is String ? toneRaw : null;
 
-    MonthEventBarStyle? parsedBarStyle;
-    if (barStyleName != null) {
-      for (final value in MonthEventBarStyle.values) {
-        if (value.name == barStyleName) {
-          parsedBarStyle = value;
+    EventColorTone? parsedTone;
+    if (toneName != null) {
+      for (final value in EventColorTone.values) {
+        if (value.name == toneName) {
+          parsedTone = value;
           break;
         }
       }
     }
 
-    settings.applyBackup(monthEventTitleSize: parsedSize, monthEventBarStyle: parsedBarStyle, aiEnabled: aiEnabled, aiBaseUrl: aiBaseUrl);
+    settings.applyBackup(monthEventTitleSize: parsedSize, eventColorTone: parsedTone, aiEnabled: aiEnabled, aiBaseUrl: aiBaseUrl);
   }
 
   static List<Event> normalizeImportedEvents(List<Event> events) {

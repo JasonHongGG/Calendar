@@ -157,7 +157,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     final availableEventSpace = cellHeight - CalendarLayout.dayLabelHeight;
     final rowHeight = settings.monthEventRowHeight;
     final rowSpacing = settings.monthEventSpacing;
-    final useHighlighterStyle = settings.monthEventUseHighlighterStyle;
+    final eventColorTone = settings.eventColorTone;
     final capacity = (availableEventSpace / (rowHeight + rowSpacing)).floor();
     final safeCapacity = capacity < 1 ? 1 : capacity;
     final maxEventRows = safeCapacity;
@@ -165,7 +165,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     // 構建帶有分隔線的週列表
     final children = <Widget>[];
     for (var i = 0; i < visibleWeeks.length; i++) {
-      children.add(_buildWeekRow(visibleWeeks[i], _weekLayouts[i] ?? const [], cellHeight, maxEventRows, rowHeight, rowSpacing, settings.monthEventFontSize, settings.monthEventOverflowFontSize, useHighlighterStyle));
+      children.add(_buildWeekRow(visibleWeeks[i], _weekLayouts[i] ?? const [], cellHeight, maxEventRows, rowHeight, rowSpacing, settings.monthEventFontSize, settings.monthEventOverflowFontSize, eventColorTone));
       if (i < visibleWeeks.length - 1) {
         children.add(Divider(height: 1, thickness: 1, color: AppColors.divider.withValues(alpha: 0.3)));
       }
@@ -174,7 +174,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     return Column(children: children);
   }
 
-  Widget _buildWeekRow(List<DateTime> week, List<_WeekEventLayout> layoutEvents, double cellHeight, int maxRows, double rowHeight, double rowSpacing, double eventFontSize, double overflowFontSize, bool useHighlighterStyle) {
+  Widget _buildWeekRow(List<DateTime> week, List<_WeekEventLayout> layoutEvents, double cellHeight, int maxRows, double rowHeight, double rowSpacing, double eventFontSize, double overflowFontSize, EventColorTone eventColorTone) {
     const baseCellHeight = CalendarLayout.dayLabelHeight;
 
     return SizedBox(
@@ -207,7 +207,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final cellWidth = constraints.maxWidth / 7;
-                  return Stack(children: _buildEventBars(week, layoutEvents, baseCellHeight, rowHeight, rowSpacing, cellWidth, maxRows, eventFontSize, overflowFontSize, useHighlighterStyle));
+                  return Stack(children: _buildEventBars(week, layoutEvents, baseCellHeight, rowHeight, rowSpacing, cellWidth, maxRows, eventFontSize, overflowFontSize, eventColorTone));
                 },
               ),
             ),
@@ -301,7 +301,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     return layout;
   }
 
-  List<Widget> _buildEventBars(List<DateTime> week, List<_WeekEventLayout> layouts, double topOffset, double rowHeight, double spacing, double cellWidth, int maxRows, double eventFontSize, double overflowFontSize, bool useHighlighterStyle) {
+  List<Widget> _buildEventBars(List<DateTime> week, List<_WeekEventLayout> layouts, double topOffset, double rowHeight, double spacing, double cellWidth, int maxRows, double eventFontSize, double overflowFontSize, EventColorTone eventColorTone) {
     final List<Widget> bars = [];
     // maxRows passed from arguments
 
@@ -318,13 +318,13 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
 
     // 2. 構建事件條 Widget 的輔助函數
     Widget createEventBar(_WeekEventData data, double width, bool forceStart, bool forceEnd) {
-      final baseColor = AppColors.eventColors[data.event.colorIndex % AppColors.eventColors.length];
-      final barColor = useHighlighterStyle ? baseColor.withValues(alpha: 0.48) : baseColor;
+      final barColor = AppColors.eventColor(data.event.colorKey, tone: eventColorTone);
+      final useDarkText = eventColorTone != EventColorTone.normal;
       final textStyle = TextStyle(
-        color: Colors.white,
+        color: useDarkText ? AppColors.textPrimary : Colors.white,
         fontSize: eventFontSize,
         fontWeight: FontWeight.bold,
-        shadows: useHighlighterStyle ? [Shadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 1.5, offset: const Offset(0, 0.6))] : null,
+        shadows: useDarkText ? null : [Shadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 1.2, offset: const Offset(0, 0.6))],
       );
 
       return IgnorePointer(
