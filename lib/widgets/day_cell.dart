@@ -76,8 +76,8 @@ class DayCell extends StatelessWidget {
                   ),
                   if (sticker != null && sticker!.isNotEmpty)
                     Positioned(
-                      right: 2,
-                      bottom: 2,
+                      right: -5,
+                      bottom: -5,
                       child: Text(sticker!, style: TextStyle(fontSize: isCompact ? 12 : 14)),
                     ),
                 ],

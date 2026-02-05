@@ -74,7 +74,7 @@ class StickerPickerSheet extends StatelessWidget {
             ),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(AppDimens.spacingNormal, 0, AppDimens.spacingNormal, AppDimens.spacingLarge),
+                padding: const EdgeInsets.fromLTRB(AppDimens.spacingNormal, 0, AppDimens.spacingNormal, AppDimens.spacingNormal),
                 child: Consumer<DateStickerProvider>(
                   builder: (context, provider, _) {
                     final selectedKey = provider.getStickerKey(date);
@@ -83,7 +83,7 @@ class StickerPickerSheet extends StatelessWidget {
                     return GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 1),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: 1),
                       itemCount: items.length,
                       itemBuilder: (context, index) {
                         final key = items[index];
@@ -93,17 +93,17 @@ class StickerPickerSheet extends StatelessWidget {
                         return Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             onTap: () {
                               provider.setSticker(date, isSelected ? null : key);
                             },
                             child: Container(
                               decoration: BoxDecoration(
                                 color: AppColors.background,
-                                borderRadius: BorderRadius.circular(16),
-                                border: isSelected ? Border.all(color: AppColors.gradientStart, width: 2) : Border.all(color: AppColors.dividerLight),
+                                borderRadius: BorderRadius.circular(12),
+                                border: isSelected ? Border.all(color: AppColors.gradientStart, width: 1.5) : Border.all(color: AppColors.dividerLight),
                               ),
-                              child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
+                              child: Center(child: Text(emoji, style: const TextStyle(fontSize: 20))),
                             ),
                           ),
                         );

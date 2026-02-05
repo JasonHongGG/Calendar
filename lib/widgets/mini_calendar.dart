@@ -78,8 +78,6 @@ class _MiniCalendarState extends State<MiniCalendar> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EventProvider>();
-    context.select<DateStickerProvider, int>((p) => p.version);
-    final stickerProvider = context.read<DateStickerProvider>();
 
     return Container(
       decoration: BoxDecoration(
@@ -135,7 +133,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
               },
               itemBuilder: (context, index) {
                 final monthDate = _calculateDateFromIndex(index);
-                return _buildCalendarContent(monthDate, provider, stickerProvider);
+                return _buildCalendarContent(monthDate, provider);
               },
             ),
           ),
@@ -145,9 +143,9 @@ class _MiniCalendarState extends State<MiniCalendar> {
     );
   }
 
-  Widget _buildCalendarContent(DateTime month, EventProvider provider, DateStickerProvider stickerProvider) {
+  Widget _buildCalendarContent(DateTime month, EventProvider provider) {
     final days = CalendarDateUtils.getCalendarDays(month);
-    return _buildCalendarGrid(days, provider, stickerProvider, month);
+    return _buildCalendarGrid(days, provider, month);
   }
 
   Widget _buildWeekdayHeader() {
@@ -179,7 +177,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
     );
   }
 
-  Widget _buildCalendarGrid(List<DateTime> days, EventProvider provider, DateStickerProvider stickerProvider, DateTime month) {
+  Widget _buildCalendarGrid(List<DateTime> days, EventProvider provider, DateTime month) {
     final weeks = <List<DateTime>>[];
     for (var i = 0; i < days.length; i += 7) {
       weeks.add(days.sublist(i, i + 7));
@@ -204,7 +202,12 @@ class _MiniCalendarState extends State<MiniCalendar> {
                 final isSelected = CalendarDateUtils.isSameDay(date, widget.selectedDate);
 
                 return Expanded(
-                  child: DayCell(date: date, currentMonth: month, isToday: isToday, isSelected: isSelected, eventColors: eventColors, sticker: stickerProvider.getStickerEmoji(date), isCompact: true, onTap: () => widget.onDateSelected?.call(date)),
+                  child: Selector<DateStickerProvider, String?>(
+                    selector: (context, provider) => provider.getStickerEmoji(date),
+                    builder: (context, sticker, _) {
+                      return DayCell(date: date, currentMonth: month, isToday: isToday, isSelected: isSelected, eventColors: eventColors, sticker: sticker, isCompact: true, onTap: () => widget.onDateSelected?.call(date));
+                    },
+                  ),
                 );
               }).toList(),
             ),

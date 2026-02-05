@@ -8,6 +8,7 @@ class DateStickerProvider extends ChangeNotifier {
 
   Box<String>? _box;
   int _version = 0;
+  final Map<String, String?> _cache = {};
 
   int get version => _version;
 
@@ -19,7 +20,10 @@ class DateStickerProvider extends ChangeNotifier {
 
   String? getStickerKey(DateTime date) {
     final key = CalendarDateUtils.formatDateKey(date);
-    return _box?.get(key);
+    if (_cache.containsKey(key)) return _cache[key];
+    final value = _box?.get(key);
+    _cache[key] = value;
+    return value;
   }
 
   String? getStickerEmoji(DateTime date) {
@@ -33,13 +37,14 @@ class DateStickerProvider extends ChangeNotifier {
     final key = CalendarDateUtils.formatDateKey(date);
     final normalized = stickerKey != null && stickerKey.isNotEmpty ? stickerKey : null;
 
+    _cache[key] = normalized;
+    _version++;
+    notifyListeners();
+
     if (normalized == null) {
       await _box!.delete(key);
     } else {
       await _box!.put(key, normalized);
     }
-
-    _version++;
-    notifyListeners();
   }
 }

@@ -76,14 +76,12 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     // Use select to only rebuild when the events list changes
     final allEvents = context.select<EventProvider, List<Event>>((p) => p.events);
     final eventsVersion = context.select<EventProvider, int>((p) => p.eventsVersion);
-    context.select<DateStickerProvider, int>((p) => p.version);
-    final stickerProvider = context.read<DateStickerProvider>();
     final settings = context.watch<SettingsProvider>();
 
     _ensureCache(allEvents, eventsVersion);
 
     // MonthCalendar now only renders the grid content
-    return _buildCalendarGrid(_visibleWeeks, _monthEvents, settings, stickerProvider);
+    return _buildCalendarGrid(_visibleWeeks, _monthEvents, settings);
   }
 
   void _ensureCache(List<Event> allEvents, int eventsVersion) {
@@ -147,7 +145,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     }).toList();
   }
 
-  Widget _buildCalendarGrid(List<List<DateTime>> visibleWeeks, List<Event> events, SettingsProvider settings, DateStickerProvider stickerProvider) {
+  Widget _buildCalendarGrid(List<List<DateTime>> visibleWeeks, List<Event> events, SettingsProvider settings) {
     // 計算動態高度
     // 使用 centralized layout constants
     final targetTotalHeight = CalendarLayout.monthGridTargetHeight;
@@ -169,7 +167,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     // 構建帶有分隔線的週列表
     final children = <Widget>[];
     for (var i = 0; i < visibleWeeks.length; i++) {
-      children.add(_buildWeekRow(visibleWeeks[i], _weekLayouts[i] ?? const [], cellHeight, maxEventRows, rowHeight, rowSpacing, settings.monthEventFontSize, settings.monthEventOverflowFontSize, eventColorTone, stickerProvider));
+      children.add(_buildWeekRow(visibleWeeks[i], _weekLayouts[i] ?? const [], cellHeight, maxEventRows, rowHeight, rowSpacing, settings.monthEventFontSize, settings.monthEventOverflowFontSize, eventColorTone));
       if (i < visibleWeeks.length - 1) {
         children.add(Divider(height: 1, thickness: 1, color: AppColors.divider.withValues(alpha: 0.3)));
       }
@@ -178,7 +176,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     return Column(children: children);
   }
 
-  Widget _buildWeekRow(List<DateTime> week, List<_WeekEventLayout> layoutEvents, double cellHeight, int maxRows, double rowHeight, double rowSpacing, double eventFontSize, double overflowFontSize, EventColorTone eventColorTone, DateStickerProvider stickerProvider) {
+  Widget _buildWeekRow(List<DateTime> week, List<_WeekEventLayout> layoutEvents, double cellHeight, int maxRows, double rowHeight, double rowSpacing, double eventFontSize, double overflowFontSize, EventColorTone eventColorTone) {
     const baseCellHeight = CalendarLayout.dayLabelHeight;
 
     return SizedBox(
@@ -194,15 +192,20 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
               // final isSelected = ...
 
               return Expanded(
-                child: DayCell(
-                  date: date,
-                  currentMonth: widget.currentMonth,
-                  isToday: isToday,
-                  isSelected: false, // 永遠不選中，由 Overlay 處理
-                  eventColors: const [],
-                  sticker: stickerProvider.getStickerEmoji(date),
-                  onTap: () => widget.onDateSelected?.call(date),
-                  onLongPress: () => widget.onDateLongPress?.call(date),
+                child: Selector<DateStickerProvider, String?>(
+                  selector: (context, provider) => provider.getStickerEmoji(date),
+                  builder: (context, sticker, _) {
+                    return DayCell(
+                      date: date,
+                      currentMonth: widget.currentMonth,
+                      isToday: isToday,
+                      isSelected: false, // 永遠不選中，由 Overlay 處理
+                      eventColors: const [],
+                      sticker: sticker,
+                      onTap: () => widget.onDateSelected?.call(date),
+                      onLongPress: () => widget.onDateLongPress?.call(date),
+                    );
+                  },
                 ),
               );
             }).toList(),
