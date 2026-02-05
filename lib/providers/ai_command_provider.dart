@@ -161,7 +161,7 @@ class AiCommandProvider extends ChangeNotifier {
   }
 
   Map<String, dynamic> _eventToToolJson(Event event) {
-    return {'id': event.id, 'title': event.title, 'startDate': event.startDate.toIso8601String(), 'endDate': event.endDate.toIso8601String(), 'isAllDay': event.isAllDay, 'colorKey': event.colorKey, 'description': event.description, 'reminderTime': event.reminderTime?.toIso8601String()};
+    return {'id': event.id, 'title': event.title, 'startDate': event.startDate.toIso8601String(), 'endDate': event.endDate.toIso8601String(), 'isAllDay': event.isAllDay, 'colorKey': event.colorKey, 'isCompleted': event.isCompleted, 'description': event.description, 'reminderTime': event.reminderTime?.toIso8601String()};
   }
 
   Future<void> _applyAiActions(List<AiAction> actions, String? message, EventProvider provider, VoidCallback? onJumpToMonth) async {
@@ -231,7 +231,8 @@ class AiCommandProvider extends ChangeNotifier {
           }
           final colorKeyRaw = action.payload['colorKey'];
           final colorKey = colorKeyRaw is String && colorKeyRaw.isNotEmpty ? colorKeyRaw : existing.colorKey;
-          final updated = existing.copyWith(title: action.payload['title'] as String? ?? existing.title, startDate: resolvedStartDate, endDate: resolvedEndDate, isAllDay: resolvedIsAllDay, colorKey: colorKey, description: action.payload['description'] as String? ?? existing.description, reminderTime: resolvedReminderTime);
+          final resolvedCompleted = action.payload['isCompleted'] as bool?;
+          final updated = existing.copyWith(title: action.payload['title'] as String? ?? existing.title, startDate: resolvedStartDate, endDate: resolvedEndDate, isAllDay: resolvedIsAllDay, colorKey: colorKey, isCompleted: resolvedCompleted ?? existing.isCompleted, description: action.payload['description'] as String? ?? existing.description, reminderTime: resolvedReminderTime);
           await provider.updateEvent(updated);
           break;
         case 'toggle_reminder':
@@ -242,6 +243,15 @@ class AiCommandProvider extends ChangeNotifier {
           final enabled = action.payload['enabled'] as bool? ?? false;
           final reminderTime = action.payload['reminderTime'] != null ? DateTime.parse(action.payload['reminderTime'] as String) : existing.reminderTime;
           final updated = existing.copyWith(reminderTime: enabled ? reminderTime : null);
+          await provider.updateEvent(updated);
+          break;
+        case 'toggle_complete':
+          final id = action.payload['id'] as String?;
+          if (id == null) break;
+          final existing = findEventById(id);
+          if (existing == null) break;
+          final isCompleted = action.payload['isCompleted'] as bool? ?? true;
+          final updated = existing.copyWith(isCompleted: isCompleted);
           await provider.updateEvent(updated);
           break;
       }
