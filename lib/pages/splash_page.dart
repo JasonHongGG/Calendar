@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
+import '../providers/date_sticker_provider.dart';
 import '../services/notification_service.dart';
 import '../theme/app_colors.dart';
 import 'home_page.dart';
@@ -41,10 +42,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   void _setupAnimations() {
     // 1. Entrance Controller (One-shot)
-    _entranceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
-    );
+    _entranceController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
 
     // Logo: Elastic Scale + Slight Rotation
     _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -62,13 +60,12 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     );
 
     // Text: Staggered Slide & Fade
-    _textSlide = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _entranceController,
-            curve: const Interval(0.4, 0.8, curve: Curves.easeOutCubic),
-          ),
-        );
+    _textSlide = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.4, 0.8, curve: Curves.easeOutCubic),
+      ),
+    );
 
     _textFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -85,38 +82,14 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     );
 
     // 2. Hover Controller (Looping)
-    _hoverController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    )..repeat(reverse: true);
+    _hoverController = AnimationController(vsync: this, duration: const Duration(milliseconds: 3000))..repeat(reverse: true);
 
     // 3. Background Controller (Looping)
-    _backgroundController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat(reverse: true);
+    _backgroundController = AnimationController(vsync: this, duration: const Duration(seconds: 10))..repeat(reverse: true);
 
-    _topOrbAlign =
-        AlignmentTween(
-          begin: const Alignment(1.2, -1.2),
-          end: const Alignment(0.6, -0.6),
-        ).animate(
-          CurvedAnimation(
-            parent: _backgroundController,
-            curve: Curves.easeInOutSine,
-          ),
-        );
+    _topOrbAlign = AlignmentTween(begin: const Alignment(1.2, -1.2), end: const Alignment(0.6, -0.6)).animate(CurvedAnimation(parent: _backgroundController, curve: Curves.easeInOutSine));
 
-    _bottomOrbAlign =
-        AlignmentTween(
-          begin: const Alignment(-1.2, 1.2),
-          end: const Alignment(-0.8, 0.8),
-        ).animate(
-          CurvedAnimation(
-            parent: _backgroundController,
-            curve: Curves.easeInOutSine,
-          ),
-        );
+    _bottomOrbAlign = AlignmentTween(begin: const Alignment(-1.2, 1.2), end: const Alignment(-0.8, 0.8)).animate(CurvedAnimation(parent: _backgroundController, curve: Curves.easeInOutSine));
 
     // Start Entrance
     _entranceController.forward();
@@ -141,6 +114,10 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       final eventProvider = Provider.of<EventProvider>(context, listen: false);
       await eventProvider.init();
 
+      if (!mounted) return;
+      final stickerProvider = Provider.of<DateStickerProvider>(context, listen: false);
+      await stickerProvider.init();
+
       // Min duration to show off animation
       final elapsedTime = DateTime.now().difference(startTime);
       final minDuration = const Duration(milliseconds: 3000);
@@ -160,8 +137,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   void _navigateToHome() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const HomePage(),
+        pageBuilder: (context, animation, secondaryAnimation) => const HomePage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -182,20 +158,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
             builder: (context, child) {
               return Stack(
                 children: [
-                  Align(
-                    alignment: _topOrbAlign.value,
-                    child: _buildGradientOrb(
-                      300,
-                      AppColors.gradientStart.withValues(alpha: 0.15),
-                    ),
-                  ),
-                  Align(
-                    alignment: _bottomOrbAlign.value,
-                    child: _buildGradientOrb(
-                      250,
-                      AppColors.gradientEnd.withValues(alpha: 0.15),
-                    ),
-                  ),
+                  Align(alignment: _topOrbAlign.value, child: _buildGradientOrb(300, AppColors.gradientStart.withValues(alpha: 0.15))),
+                  Align(alignment: _bottomOrbAlign.value, child: _buildGradientOrb(250, AppColors.gradientEnd.withValues(alpha: 0.15))),
                 ],
               );
             },
@@ -208,20 +172,14 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
               children: [
                 // Logo with Hover & Parallax-like feel
                 AnimatedBuilder(
-                  animation: Listenable.merge([
-                    _entranceController,
-                    _hoverController,
-                  ]),
+                  animation: Listenable.merge([_entranceController, _hoverController]),
                   builder: (context, child) {
                     final hoverOffset = Offset(0, 10 * _hoverController.value);
                     return Transform.translate(
                       offset: hoverOffset,
                       child: Transform.rotate(
                         angle: _logoRotate.value,
-                        child: Transform.scale(
-                          scale: _logoScale.value,
-                          child: _buildLogoCard(),
-                        ),
+                        child: Transform.scale(scale: _logoScale.value, child: _buildLogoCard()),
                       ),
                     );
                   },
@@ -241,13 +199,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                             opacity: _textFade.value,
                             child: const Text(
                               'Smart Calendar',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                                letterSpacing: 1.2,
-                                height: 1.2,
-                              ),
+                              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textPrimary, letterSpacing: 1.2, height: 1.2),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -255,12 +207,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                             opacity: _sloganFade.value,
                             child: const Text(
                               'Plan your days efficiently',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.normal,
-                                color: AppColors.textSecondary,
-                                letterSpacing: 0.5,
-                              ),
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.normal, color: AppColors.textSecondary, letterSpacing: 0.5),
                             ),
                           ),
                         ],
@@ -282,8 +229,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 child: TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0.0, end: 1.0),
                   duration: const Duration(milliseconds: 400),
-                  builder: (context, value, child) =>
-                      Opacity(opacity: value, child: child),
+                  builder: (context, value, child) => Opacity(opacity: value, child: child),
                   child: ElevatedButton.icon(
                     onPressed: () {
                       setState(() => _hasError = false);
@@ -291,18 +237,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                     },
                     icon: const Icon(Icons.refresh_rounded),
                     label: const Text('重試'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.gradientStart,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shadowColor: AppColors.gradientStart.withValues(
-                        alpha: 0.4,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.gradientStart, foregroundColor: Colors.white, elevation: 4, shadowColor: AppColors.gradientStart.withValues(alpha: 0.4), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
                   ),
                 ),
               ),
@@ -319,21 +254,11 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow.withValues(alpha: 0.1),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: AppColors.shadow.withValues(alpha: 0.1), blurRadius: 30, offset: const Offset(0, 10))],
       ),
       child: Center(
         child: ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.gradientStart, AppColors.gradientEnd],
-          ).createShader(bounds),
+          shaderCallback: (bounds) => LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.gradientStart, AppColors.gradientEnd]).createShader(bounds),
           child: const Icon(
             Icons.calendar_month_rounded,
             size: 70,

@@ -14,10 +14,12 @@ class DayCell extends StatelessWidget {
   final bool isSelected;
   final bool isToday;
   final List<String> eventColors;
+  final String? sticker;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final bool isCompact;
 
-  const DayCell({super.key, required this.date, required this.currentMonth, this.isSelected = false, this.isToday = false, this.eventColors = const [], this.onTap, this.isCompact = false});
+  const DayCell({super.key, required this.date, required this.currentMonth, this.isSelected = false, this.isToday = false, this.eventColors = const [], this.sticker, this.onTap, this.onLongPress, this.isCompact = false});
 
   bool get _isInMonth => CalendarDateUtils.isInMonth(date, currentMonth);
   bool get _isSunday => date.weekday == DateTime.sunday;
@@ -33,6 +35,7 @@ class DayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         margin: const EdgeInsets.all(1),
         decoration: BoxDecoration(
@@ -47,26 +50,37 @@ class DayCell extends StatelessWidget {
             SizedBox(
               width: isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize,
               height: isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize,
-              child: Center(
-                child: Container(
-                  width: isToday ? (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize) * 0.8 : (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize),
-                  height: isToday ? (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize) * 0.8 : (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize),
-                  decoration: isToday
-                      ? BoxDecoration(
-                          gradient: null, // 移除原本的漸層，改成純色
-                          color: _dayColor, // 今天：背景為該日代表色 (紅/藍/黑)
-                          shape: BoxShape.rectangle,
-                          borderRadius: BorderRadius.circular((isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize) * 0.6 * 0.4),
-                          boxShadow: [BoxShadow(color: _dayColor.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))],
-                        )
-                      : null,
-                  child: Center(
-                    child: Text(
-                      '${date.day}',
-                      style: (isCompact ? AppTextStyles.dayNumberCompact : AppTextStyles.dayNumber).copyWith(fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w500, color: _getTextColorWithinCircle()),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Center(
+                    child: Container(
+                      width: isToday ? (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize) * 0.8 : (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize),
+                      height: isToday ? (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize) * 0.8 : (isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize),
+                      decoration: isToday
+                          ? BoxDecoration(
+                              gradient: null, // 移除原本的漸層，改成純色
+                              color: _dayColor, // 今天：背景為該日代表色 (紅/藍/黑)
+                              shape: BoxShape.rectangle,
+                              borderRadius: BorderRadius.circular((isCompact ? AppDimens.dayCellSizeCompact : AppDimens.dayCellSize) * 0.6 * 0.4),
+                              boxShadow: [BoxShadow(color: _dayColor.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))],
+                            )
+                          : null,
+                      child: Center(
+                        child: Text(
+                          '${date.day}',
+                          style: (isCompact ? AppTextStyles.dayNumberCompact : AppTextStyles.dayNumber).copyWith(fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w500, color: _getTextColorWithinCircle()),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  if (sticker != null && sticker!.isNotEmpty)
+                    Positioned(
+                      right: 2,
+                      bottom: 2,
+                      child: Text(sticker!, style: TextStyle(fontSize: isCompact ? 12 : 14)),
+                    ),
+                ],
               ),
             ),
             // 農曆日期

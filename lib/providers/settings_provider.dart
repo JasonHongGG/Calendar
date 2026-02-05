@@ -6,7 +6,7 @@ enum MonthEventTitleSize { medium, large, xlarge }
 
 class SettingsProvider extends ChangeNotifier {
   MonthEventTitleSize _monthEventTitleSize = MonthEventTitleSize.xlarge;
-  EventColorTone _eventColorTone = EventColorTone.normal;
+  EventColorTone _eventColorTone = EventColorTone.lightest;
   bool _aiEnabled = true;
   String _aiBaseUrl = 'https://calendar.alberthongtunnel.dpdns.org';
 

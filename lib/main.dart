@@ -5,6 +5,7 @@ import 'theme/app_theme.dart';
 import 'providers/event_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/ai_command_provider.dart';
+import 'providers/date_sticker_provider.dart';
 import 'pages/splash_page.dart';
 
 void main() {
@@ -19,6 +20,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => EventProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => AiCommandProvider()),
+        ChangeNotifierProvider(create: (_) => DateStickerProvider()),
       ],
       child: const CalendarApp(),
     ),

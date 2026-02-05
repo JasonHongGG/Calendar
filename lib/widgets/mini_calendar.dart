@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
+import '../providers/date_sticker_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -17,13 +18,7 @@ class MiniCalendar extends StatefulWidget {
   final Function(DateTime)? onDateSelected;
   final Function(DateTime)? onMonthChanged;
 
-  const MiniCalendar({
-    super.key,
-    required this.currentMonth,
-    required this.selectedDate,
-    this.onDateSelected,
-    this.onMonthChanged,
-  });
+  const MiniCalendar({super.key, required this.currentMonth, required this.selectedDate, this.onDateSelected, this.onMonthChanged});
 
   @override
   State<MiniCalendar> createState() => _MiniCalendarState();
@@ -45,11 +40,9 @@ class _MiniCalendarState extends State<MiniCalendar> {
   void didUpdateWidget(MiniCalendar oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Sync controller if currentMonth changes externally
-    if (widget.currentMonth.year != oldWidget.currentMonth.year ||
-        widget.currentMonth.month != oldWidget.currentMonth.month) {
+    if (widget.currentMonth.year != oldWidget.currentMonth.year || widget.currentMonth.month != oldWidget.currentMonth.month) {
       final targetIndex = _calculateIndex(widget.currentMonth);
-      if (_pageController.hasClients &&
-          _pageController.page?.round() != targetIndex) {
+      if (_pageController.hasClients && _pageController.page?.round() != targetIndex) {
         _pageController.jumpToPage(targetIndex);
       }
     }
@@ -84,40 +77,29 @@ class _MiniCalendarState extends State<MiniCalendar> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<EventProvider>();
+    context.select<DateStickerProvider, int>((p) => p.version);
+    final stickerProvider = context.read<DateStickerProvider>();
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: AppColors.shadow.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 2))],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // 月份標題 (使用新的 CalendarHeader)
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimens.spacingSmall,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppDimens.spacingSmall),
             child: CalendarHeader(
-              title:
-                  '${widget.currentMonth.year}/${widget.currentMonth.month.toString().padLeft(2, '0')}',
+              title: '${widget.currentMonth.year}/${widget.currentMonth.month.toString().padLeft(2, '0')}',
               onPrevious: () {
-                _pageController.previousPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
+                _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
               },
               onNext: () {
-                _pageController.nextPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
+                _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
               },
               onTitleTap: () => _showDateSelector(context, widget.currentMonth),
               onTodayTap: () {
@@ -136,8 +118,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
           const SizedBox(height: AppDimens.spacingTiny),
           // 可滑動的日曆網格
           SizedBox(
-            height:
-                250, // Fixed height for 6 rows (40*6 + margin) - Keeping as valid functional constant for now or move to CalendarLayout?
+            height: 250, // Fixed height for 6 rows (40*6 + margin) - Keeping as valid functional constant for now or move to CalendarLayout?
             // Let's leave 250 here or logically calculated.
             // 6 rows * 40ish = 240.
             // Check Row height in _buildCalendarGrid: height: 40.
@@ -148,14 +129,13 @@ class _MiniCalendarState extends State<MiniCalendar> {
               onPageChanged: (index) {
                 final newMonth = _calculateDateFromIndex(index);
                 // Prevent loop: Only notify if the month implies a change from the current widget state
-                if (newMonth.year != widget.currentMonth.year ||
-                    newMonth.month != widget.currentMonth.month) {
+                if (newMonth.year != widget.currentMonth.year || newMonth.month != widget.currentMonth.month) {
                   widget.onMonthChanged?.call(newMonth);
                 }
               },
               itemBuilder: (context, index) {
                 final monthDate = _calculateDateFromIndex(index);
-                return _buildCalendarContent(monthDate);
+                return _buildCalendarContent(monthDate, provider, stickerProvider);
               },
             ),
           ),
@@ -165,14 +145,9 @@ class _MiniCalendarState extends State<MiniCalendar> {
     );
   }
 
-  Widget _buildCalendarContent(DateTime month) {
+  Widget _buildCalendarContent(DateTime month, EventProvider provider, DateStickerProvider stickerProvider) {
     final days = CalendarDateUtils.getCalendarDays(month);
-    // Provider is needed for event colors
-    // Note: We are inside a consumer context (SchedulePage passes context or we access it here)
-    // Accessing provider here is fine.
-    final provider = context.watch<EventProvider>();
-
-    return _buildCalendarGrid(days, provider, month);
+    return _buildCalendarGrid(days, provider, stickerProvider, month);
   }
 
   Widget _buildWeekdayHeader() {
@@ -195,10 +170,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
             child: Center(
               child: Text(
                 label,
-                style: AppTextStyles.captionSmall.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
+                style: AppTextStyles.captionSmall.copyWith(fontWeight: FontWeight.w600, color: textColor),
               ),
             ),
           );
@@ -207,11 +179,7 @@ class _MiniCalendarState extends State<MiniCalendar> {
     );
   }
 
-  Widget _buildCalendarGrid(
-    List<DateTime> days,
-    EventProvider provider,
-    DateTime month,
-  ) {
+  Widget _buildCalendarGrid(List<DateTime> days, EventProvider provider, DateStickerProvider stickerProvider, DateTime month) {
     final weeks = <List<DateTime>>[];
     for (var i = 0; i < days.length; i += 7) {
       weeks.add(days.sublist(i, i + 7));
@@ -233,21 +201,10 @@ class _MiniCalendarState extends State<MiniCalendar> {
               children: week.map((date) {
                 final eventColors = provider.getEventColorsForDate(date);
                 final isToday = CalendarDateUtils.isToday(date);
-                final isSelected = CalendarDateUtils.isSameDay(
-                  date,
-                  widget.selectedDate,
-                );
+                final isSelected = CalendarDateUtils.isSameDay(date, widget.selectedDate);
 
                 return Expanded(
-                  child: DayCell(
-                    date: date,
-                    currentMonth: month,
-                    isToday: isToday,
-                    isSelected: isSelected,
-                    eventColors: eventColors,
-                    isCompact: true,
-                    onTap: () => widget.onDateSelected?.call(date),
-                  ),
+                  child: DayCell(date: date, currentMonth: month, isToday: isToday, isSelected: isSelected, eventColors: eventColors, sticker: stickerProvider.getStickerEmoji(date), isCompact: true, onTap: () => widget.onDateSelected?.call(date)),
                 );
               }).toList(),
             ),

@@ -12,6 +12,7 @@ import '../widgets/month_calendar.dart';
 import '../widgets/add_event_sheet.dart';
 import '../widgets/day_detail_sheet.dart';
 import '../widgets/date_selector_modal.dart';
+import '../widgets/sticker_picker_sheet.dart';
 import 'settings_page.dart';
 
 /// 月視圖頁面
@@ -76,6 +77,10 @@ class _MonthViewPageState extends State<MonthViewPage> {
         },
       ),
     );
+  }
+
+  void _showStickerPicker(BuildContext context, DateTime date) {
+    showStickerPickerSheet(context: context, date: date);
   }
 
   @override
@@ -181,6 +186,7 @@ class _MonthViewPageState extends State<MonthViewPage> {
                                   provider.setSelectedDate(date);
                                 }
                               },
+                              onDateLongPress: (date) => _showStickerPicker(context, date),
                               onEventTap: (event) {
                                 showAddEventSheet(context, editEvent: event, initialDate: event.startDate);
                               },

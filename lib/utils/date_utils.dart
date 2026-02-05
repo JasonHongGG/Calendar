@@ -33,9 +33,7 @@ class CalendarDateUtils {
 
   /// 檢查兩個日期是否為同一天
   static bool isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-        date1.month == date2.month &&
-        date1.day == date2.day;
+    return date1.year == date2.year && date1.month == date2.month && date1.day == date2.day;
   }
 
   /// 檢查日期是否為今天
@@ -114,6 +112,12 @@ class CalendarDateUtils {
   /// 取得日期的純日期部分（不含時間）
   static DateTime dateOnly(DateTime date) {
     return DateTime(date.year, date.month, date.day);
+  }
+
+  /// 格式化日期為穩定的 key（yyyy-MM-dd）
+  static String formatDateKey(DateTime date) {
+    final d = dateOnly(date);
+    return DateFormat('yyyy-MM-dd').format(d);
   }
 
   /// 比較兩個日期的先後（僅比較日期部分）
