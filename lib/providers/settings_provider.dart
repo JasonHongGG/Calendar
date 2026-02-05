@@ -2,18 +2,30 @@ import 'package:flutter/material.dart';
 
 enum MonthEventTitleSize { medium, large, xlarge }
 
+enum MonthEventBarStyle { solid, highlighter }
+
 class SettingsProvider extends ChangeNotifier {
   MonthEventTitleSize _monthEventTitleSize = MonthEventTitleSize.medium;
+  MonthEventBarStyle _monthEventBarStyle = MonthEventBarStyle.solid;
   bool _aiEnabled = true;
   String _aiBaseUrl = 'https://calendar.alberthongtunnel.dpdns.org';
 
   MonthEventTitleSize get monthEventTitleSize => _monthEventTitleSize;
+  MonthEventBarStyle get monthEventBarStyle => _monthEventBarStyle;
   bool get aiEnabled => _aiEnabled;
   String get aiBaseUrl => _aiBaseUrl;
+
+  bool get monthEventUseHighlighterStyle => _monthEventBarStyle == MonthEventBarStyle.highlighter;
 
   void setMonthEventTitleSize(MonthEventTitleSize size) {
     if (_monthEventTitleSize == size) return;
     _monthEventTitleSize = size;
+    notifyListeners();
+  }
+
+  void setMonthEventBarStyle(MonthEventBarStyle style) {
+    if (_monthEventBarStyle == style) return;
+    _monthEventBarStyle = style;
     notifyListeners();
   }
 
@@ -30,10 +42,14 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void applyBackup({MonthEventTitleSize? monthEventTitleSize, bool? aiEnabled, String? aiBaseUrl}) {
+  void applyBackup({MonthEventTitleSize? monthEventTitleSize, MonthEventBarStyle? monthEventBarStyle, bool? aiEnabled, String? aiBaseUrl}) {
     var changed = false;
     if (monthEventTitleSize != null && _monthEventTitleSize != monthEventTitleSize) {
       _monthEventTitleSize = monthEventTitleSize;
+      changed = true;
+    }
+    if (monthEventBarStyle != null && _monthEventBarStyle != monthEventBarStyle) {
+      _monthEventBarStyle = monthEventBarStyle;
       changed = true;
     }
     if (aiEnabled != null && _aiEnabled != aiEnabled) {

@@ -112,6 +112,15 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  String _labelForMonthEventBarStyle(MonthEventBarStyle style) {
+    switch (style) {
+      case MonthEventBarStyle.solid:
+        return '實心色塊';
+      case MonthEventBarStyle.highlighter:
+        return '螢光筆（半透明）';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
@@ -152,6 +161,47 @@ class _SettingsPageState extends State<SettingsPage> {
                                     dense: true,
                                     title: Text(
                                       _labelForSize(size),
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                    ),
+                                    activeColor: AppColors.gradientStart,
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+              _SettingsDivider(),
+              _SettingsTile(
+                icon: Icons.highlight_alt_rounded,
+                title: '月曆事件樣式',
+                subtitle: '目前：${_labelForMonthEventBarStyle(settings.monthEventBarStyle)}',
+                onTap: () {
+                  _showSettingsModal(
+                    context,
+                    title: '月曆事件樣式',
+                    description: '調整月曆格子中的事件條呈現方式。',
+                    closeLabel: '完成',
+                    child: Consumer<SettingsProvider>(
+                      builder: (context, settings, _) {
+                        return RadioGroup<MonthEventBarStyle>(
+                          groupValue: settings.monthEventBarStyle,
+                          onChanged: (value) {
+                            if (value == null) return;
+                            settings.setMonthEventBarStyle(value);
+                          },
+                          child: Column(
+                            children: MonthEventBarStyle.values
+                                .map(
+                                  (style) => RadioListTile<MonthEventBarStyle>(
+                                    value: style,
+                                    contentPadding: EdgeInsets.zero,
+                                    dense: true,
+                                    title: Text(
+                                      _labelForMonthEventBarStyle(style),
                                       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                                     ),
                                     activeColor: AppColors.gradientStart,
@@ -243,7 +293,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     closeLabel: '取消',
                     primaryLabel: '開始匯出',
                     onPrimary: () => _exportJson(context),
-                    child: const _InfoPanel(title: '會包含：', bullets: ['事件清單', 'AI 設定', '月曆事件標題大小']),
+                    child: const _InfoPanel(title: '會包含：', bullets: ['事件清單', 'AI 設定', '月曆事件標題大小', '月曆事件樣式']),
                   );
                 },
               ),

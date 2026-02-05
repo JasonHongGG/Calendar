@@ -64,7 +64,7 @@ class CalendarBackup {
 
 class BackupCodec {
   static Map<String, dynamic> settingsToJson(SettingsProvider settings) {
-    return {'monthEventTitleSize': settings.monthEventTitleSize.name, 'aiEnabled': settings.aiEnabled, 'aiBaseUrl': settings.aiBaseUrl};
+    return {'monthEventTitleSize': settings.monthEventTitleSize.name, 'monthEventBarStyle': settings.monthEventBarStyle.name, 'aiEnabled': settings.aiEnabled, 'aiBaseUrl': settings.aiBaseUrl};
   }
 
   static void applySettingsFromJson(SettingsProvider settings, Map<String, dynamic> json) {
@@ -87,7 +87,20 @@ class BackupCodec {
     final aiBaseUrlRaw = json['aiBaseUrl'];
     final String? aiBaseUrl = aiBaseUrlRaw is String ? aiBaseUrlRaw : null;
 
-    settings.applyBackup(monthEventTitleSize: parsedSize, aiEnabled: aiEnabled, aiBaseUrl: aiBaseUrl);
+    final barStyleRaw = json['monthEventBarStyle'];
+    final barStyleName = barStyleRaw is String ? barStyleRaw : null;
+
+    MonthEventBarStyle? parsedBarStyle;
+    if (barStyleName != null) {
+      for (final value in MonthEventBarStyle.values) {
+        if (value.name == barStyleName) {
+          parsedBarStyle = value;
+          break;
+        }
+      }
+    }
+
+    settings.applyBackup(monthEventTitleSize: parsedSize, monthEventBarStyle: parsedBarStyle, aiEnabled: aiEnabled, aiBaseUrl: aiBaseUrl);
   }
 
   static List<Event> normalizeImportedEvents(List<Event> events) {
