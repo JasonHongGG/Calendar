@@ -148,26 +148,30 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
   Widget _buildCalendarGrid(List<List<DateTime>> visibleWeeks, List<Event> events, SettingsProvider settings) {
     // 計算動態高度
     // 使用 centralized layout constants
-    final targetTotalHeight = CalendarLayout.monthGridTargetHeight;
-    // 減去分隔線的高度 (每週之間有一條線，共 visibleWeeks.length - 1 條)
-    // 確保總高度 (Cells + Dividers) 準確等於 targetTotalHeight
-    final totalDividerHeight = (visibleWeeks.length - 1) * 1.0;
-    final cellHeight = (targetTotalHeight - totalDividerHeight) / visibleWeeks.length;
-
     // 計算動態最大事件行數
-    // cellHeight = dayLabelHeight + events
-    final availableEventSpace = cellHeight - CalendarLayout.dayLabelHeight;
+    // 在 LayoutBuilder 中計算，這裡不再需要 cellHeight
     final rowHeight = settings.monthEventRowHeight;
     final rowSpacing = settings.monthEventSpacing;
     final eventColorTone = settings.eventColorTone;
-    final capacity = (availableEventSpace / (rowHeight + rowSpacing)).floor();
-    final safeCapacity = capacity < 1 ? 1 : capacity;
-    final maxEventRows = safeCapacity;
 
+    // 構建帶有分隔線的週列表
     // 構建帶有分隔線的週列表
     final children = <Widget>[];
     for (var i = 0; i < visibleWeeks.length; i++) {
-      children.add(_buildWeekRow(visibleWeeks[i], _weekLayouts[i] ?? const [], cellHeight, maxEventRows, rowHeight, rowSpacing, settings.monthEventFontSize, settings.monthEventOverflowFontSize, eventColorTone));
+		  // 改為 Expanded，讓每一週自動平分剩餘空間
+      children.add(
+        Expanded(
+          child: _buildWeekRow(
+            visibleWeeks[i],
+            _weekLayouts[i] ?? const [],
+            rowHeight,
+            rowSpacing,
+            settings.monthEventFontSize,
+            settings.monthEventOverflowFontSize,
+            eventColorTone,
+          ),
+        ),
+      );
       if (i < visibleWeeks.length - 1) {
         children.add(Divider(height: 1, thickness: 1, color: AppColors.divider.withValues(alpha: 0.3)));
       }
@@ -176,12 +180,10 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
     return Column(children: children);
   }
 
-  Widget _buildWeekRow(List<DateTime> week, List<_WeekEventLayout> layoutEvents, double cellHeight, int maxRows, double rowHeight, double rowSpacing, double eventFontSize, double overflowFontSize, EventColorTone eventColorTone) {
+  Widget _buildWeekRow(List<DateTime> week, List<_WeekEventLayout> layoutEvents, double rowHeight, double rowSpacing, double eventFontSize, double overflowFontSize, EventColorTone eventColorTone) {
     const baseCellHeight = CalendarLayout.dayLabelHeight;
 
-    return SizedBox(
-      height: cellHeight,
-      child: Stack(
+    return Stack(
         children: [
           // 日期格子背景和數字
           Row(
@@ -216,6 +218,13 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final cellWidth = constraints.maxWidth / 7;
+									final cellHeight = constraints.maxHeight;
+                  
+                  // 在 LayoutBuilder 中動態計算 maxRows
+                  final availableEventSpace = cellHeight - baseCellHeight;
+                  final capacity = (availableEventSpace / (rowHeight + rowSpacing)).floor();
+                  final maxRows = capacity < 1 ? 1 : capacity;
+
                   return Stack(children: _buildEventBars(week, layoutEvents, baseCellHeight, rowHeight, rowSpacing, cellWidth, maxRows, eventFontSize, overflowFontSize, eventColorTone));
                 },
               ),
@@ -243,8 +252,7 @@ class _MonthCalendarState extends State<MonthCalendar> with AutomaticKeepAliveCl
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 
   List<_WeekEventLayout> _layoutEventsForWeek(List<DateTime> week, List<Event> allEvents) {
