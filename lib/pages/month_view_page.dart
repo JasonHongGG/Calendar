@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
 import '../providers/event_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_dimens.dart';
 import '../theme/app_text_styles.dart';
@@ -92,9 +93,10 @@ class _MonthViewPageState extends State<MonthViewPage> {
   @override
   Widget build(BuildContext context) {
     final currentMonth = context.watch<EventProvider>().currentMonth;
+    final settings = context.watch<SettingsProvider>();
     final prevMonth = DateTime(currentMonth.year, currentMonth.month - 1);
     final nextMonth = DateTime(currentMonth.year, currentMonth.month + 1);
-    _scheduleWidgetSnapshot(currentMonth);
+    _scheduleWidgetSnapshot(currentMonth, settings);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final targetIndex = _calculateIndex(currentMonth);
@@ -160,7 +162,8 @@ class _MonthViewPageState extends State<MonthViewPage> {
                             final newMonth = _calculateDateFromIndex(index);
                             if (newMonth.year != provider.currentMonth.year || newMonth.month != provider.currentMonth.month) {
                               provider.setCurrentMonth(newMonth);
-                              _scheduleWidgetSnapshot(newMonth);
+                              // 設定變更會觸發 rebuild，這裡傳入當前設定
+                              _scheduleWidgetSnapshot(newMonth, context.read<SettingsProvider>());
                             }
                             _prewarmTimer?.cancel();
                             _prewarmTimer = Timer(const Duration(milliseconds: 180), () {
@@ -256,17 +259,22 @@ class _MonthViewPageState extends State<MonthViewPage> {
     );
   }
 
-  void _scheduleWidgetSnapshot(DateTime month) {
-    final key = '${month.year}-${month.month}';
+  void _scheduleWidgetSnapshot(DateTime month, SettingsProvider settings) {
+    // Key now includes settings that affect appearance
+    final key = '${month.year}-${month.month}-${settings.monthEventTitleSize.index}-${settings.eventColorTone.index}';
     if (_lastWidgetMonthKey == key) return;
     _lastWidgetMonthKey = key;
+    
+    print('MonthViewPage: Scheduling widget snapshot for $month with key $key');
+
     final prevMonth = DateTime(month.year, month.month - 1);
     final nextMonth = DateTime(month.year, month.month + 1);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      await HomeWidgetService.updateMonthWidgetFromBoundary(_widgetBoundaryPrevKey, prevMonth);
-      await HomeWidgetService.updateMonthWidgetFromBoundary(_widgetBoundaryNextKey, nextMonth);
-      await HomeWidgetService.updateMonthWidgetFromBoundary(_widgetBoundaryKey, month, setAsCurrent: true);
+      final settingsKey = '${settings.monthEventTitleSize.index}-${settings.eventColorTone.index}';
+      await HomeWidgetService.updateMonthWidgetFromBoundary(_widgetBoundaryPrevKey, prevMonth, filenameSuffix: settingsKey);
+      await HomeWidgetService.updateMonthWidgetFromBoundary(_widgetBoundaryNextKey, nextMonth, filenameSuffix: settingsKey);
+      await HomeWidgetService.updateMonthWidgetFromBoundary(_widgetBoundaryKey, month, setAsCurrent: true, filenameSuffix: settingsKey);
     });
   }
 
