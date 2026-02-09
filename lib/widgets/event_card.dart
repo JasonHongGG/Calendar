@@ -17,6 +17,7 @@ class EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tone = context.select<SettingsProvider, EventColorTone>((s) => s.eventColorTone);
     final color = AppColors.eventColor(event.colorKey, tone: tone);
+    final isCompleted = event.isCompleted;
     return Container(
       margin: const EdgeInsets.only(bottom: 0), // 外距由父層控制或設為 0
       decoration: BoxDecoration(
@@ -77,10 +78,10 @@ class EventCard extends StatelessWidget {
                   ),
                 ),
 
-                if (event.isCompleted)
+                if (isCompleted)
                   Padding(
                     padding: const EdgeInsets.only(left: 8),
-                    child: Icon(Icons.check_circle_rounded, color: AppColors.gradientStart, size: 20),
+                    child: Icon(Icons.check_rounded, color: AppColors.textSunday, size: 20),
                   ),
 
                 // 3. 刪除按鈕
